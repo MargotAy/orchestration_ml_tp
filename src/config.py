@@ -16,7 +16,7 @@ load_dotenv(ROOT / ".env")
 
 # TODO (S0-1) : chemin vers votre fichier de donnees (CSV) place dans data/
 DATA_PATH = ROOT / "data" / "heart_2020_prepared.csv"
-#MODEL_DIR = ROOT / "models"
+MODEL_DIR = ROOT / "models"
 
 # TODO (S0-2) : nom de la colonne cible binaire (valeurs 0/1)
 TARGET = "HeartDisease"
