@@ -30,7 +30,7 @@ CATEGORICAL_FEATURES: list[str] = ["Smoking", "AlcoholDrinking", "Stroke", "Diff
 
 RANDOM_STATE = 42
 
-# Surcouche via variables d'environnement (principe 12-factor)
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
-MLFLOW_EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT", "classification-baseline")
-MODEL_NAME = os.getenv("MODEL_NAME", "classifier")
+
+MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
+MLFLOW_EXPERIMENT = "heart-disease-classification"
+MODEL_NAME = "heart-disease-model"
