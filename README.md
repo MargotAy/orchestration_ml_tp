@@ -23,3 +23,7 @@ On fait un nettoyage de données. Elles sont relativement propres mais elles son
 Si le dataset n'était pas préalablement nettoyé, c'est dans ces fichiers que nous aurions du faire des modificaitons/transformations.
 
 
+## train.py
+On implémente un modèle de Régression Logistique en baseline pour répondre à la question : 
+"Quelle est la probabilité d'un patient ait une maladie cardiaque en fonction de ses facteurs ?" 
+On utilise la régression logistique car nous voulons une solution binaire (est-ce que le patient pourrait avoir une maladie cardiaque *oui* ou *non*)
