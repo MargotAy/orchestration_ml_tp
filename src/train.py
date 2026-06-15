@@ -8,8 +8,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.pipeline import Pipeline
 
-from mlproject.data import load_data, split
-from mlproject.features import build_preprocessor
+from src.data import load_data, split
+from src.features import build_preprocessor
 
 
 def build_model() -> Pipeline:
