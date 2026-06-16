@@ -34,3 +34,6 @@ RANDOM_STATE = 42
 MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
 MLFLOW_EXPERIMENT = "heart-disease-classification"
 MODEL_NAME = "heart-disease-model"
+
+EVAL_ROC_AUC_MIN = 0.8
+EVAL_F1_MIN = 0.8

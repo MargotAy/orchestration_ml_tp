@@ -1,5 +1,5 @@
 [project]
-name = "mlops-churn"
+name = "heart-disease-classification"
 version = "0.1.0"
 description = "Projet fil rouge - Orchestration Machine Learning (ESGI)"
 requires-python = ">=3.13"
