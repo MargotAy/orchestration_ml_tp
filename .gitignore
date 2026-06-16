@@ -1,1 +1,5 @@
 data/heart_2020_cleaned.csv
+mlflow.db
+uv.lock
+mlartifacts/
+mlruns/
