@@ -14,6 +14,7 @@ import argparse
 import logging
 import warnings
 from dataclasses import dataclass
+from typing import cast
 
 import joblib
 import matplotlib.pyplot as plt
@@ -21,6 +22,7 @@ import mlflow
 import mlflow.sklearn
 import numpy as np
 from mlflow.models import infer_signature
+from mlflow.tracking import MlflowClient
 from sklearn.base import ClassifierMixin
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
@@ -45,6 +47,7 @@ from src.config import (
     RANDOM_STATE,
 )
 from src.data import load_data, split
+from src.evaluation import log_shap_summary
 from src.features import build_preprocessor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -84,8 +87,8 @@ def build_model_specs() -> list[ModelSpec]:
             estimator=RandomForestClassifier(random_state=RANDOM_STATE),
             param_grid={
                 "clf__n_estimators": [100, 200],
-                "clf__max_depth": [5, 10, 20],
-                "clf__min_samples_leaf": [1, 5],
+                "clf__max_depth": [None, 10, 20],
+                "clf__min_samples_leaf": [1, 2],
             }
         ),
         ModelSpec(
@@ -195,20 +198,71 @@ def log_run_to_mlflow(
         plt.close(fig)
 
         # Rapport de classification
-        report_dict = classification_report(y_test, result.preds, output_dict=True)
+        report_dict = cast(dict, classification_report(y_test, result.preds, output_dict=True))
         mlflow.log_dict(report_dict, "classification_report.json")
-        report_text = classification_report(y_test, result.preds)
+        report_text = cast(str, classification_report(y_test, result.preds))
         mlflow.log_text(report_text, "classification_report.txt")
+        log_shap_summary(result.best_estimator, x_test, result.name)
 
         # Sauvegarde du modèle
         signature = infer_signature(x_test, result.best_estimator.predict(x_test))
-        mlflow.sklearn.log_model(
+        model_info = mlflow.sklearn.log_model(
             result.best_estimator,
             name="model",
             signature=signature,
             input_example=x_test.iloc[:5],
             registered_model_name=register_as,
         )
+        if register_as and model_info.registered_model_version:
+            describe_registered_version(
+                name=register_as,
+                version=int(model_info.registered_model_version),
+                result=result,
+                cv=cv,
+                scoring=scoring,
+            )
+
+
+def describe_registered_version(
+    name: str,
+    version: int,
+    result: FitResult,
+    cv: int,
+    scoring: str,
+) -> None:
+    """Documenter une version enregistrée dans le registry
+
+    Ajoute une description (algorithme, hyperparametres, metriques) et des
+    tags (famille de modele, methode de recherche, scores) sur la version du
+    modele afin de pouvoir comparer les versions sans rouvrir le run MLflow.   
+
+    Paramètres : 
+        name: nom du modele
+        version: version du modele enregistrée
+        result: resultat de l'entrainement (f1, roc_auc, precision, recall)
+        cv: nombre de folds pour la validation croisee
+        scoring: methode de scoring (roc_auc, f1, precision, recall) qui a été utilisée pour l'entrainement
+    """
+    client = MlflowClient()
+    version_str = str(version)
+    description = (
+        f"Model family: {result.name}\n"
+        f"Search: GridSearchCV (cv={cv}, scoring={scoring})\n"
+        f"Best params: {result.best_params}\n"
+        f"Test metrics: f1={result.f1:.3f}, roc_auc={result.roc_auc:.3f}, "
+        f"precision={result.precision:.3f}, recall={result.recall:.3f}"
+    )
+    client.update_model_version(name=name, version=version_str, description=description)
+    client.set_model_version_tag(name=name, version=version_str, key="model_family", value=result.name)
+    client.set_model_version_tag(name=name, version=version_str, key="search_method", value="GridSearchCV")
+    client.set_model_version_tag(name=name, version=version_str, key="cv", value=str(cv))
+    client.set_model_version_tag(name=name, version=version_str, key="scoring", value=scoring)
+    client.set_model_version_tag(name=name, version=version_str, key="f1", value=f"{result.f1:.4f}")
+    client.set_model_version_tag(name=name, version=version_str, key="roc_auc", value=f"{result.roc_auc:.4f}")
+    client.set_model_version_tag(
+        name=name, version=version_str, key="precision", value=f"{result.precision:.4f}"
+    )
+    client.set_model_version_tag(name=name, version=version_str, key="recall", value=f"{result.recall:.4f}")
 
 
 def train_all(
@@ -240,6 +294,12 @@ def train_all(
             mlflow.log_param("cv", cv)
             mlflow.log_param("scoring", scoring)
             mlflow.set_tag("best_model", best.name)
+            mlflow.log_metrics({
+                "best_f1": best.f1,
+                "best_roc_auc": best.roc_auc,
+                "best_precision": best.precision,
+                "best_recall": best.recall,
+            })
             for result in results:
                 register_as = MODEL_NAME if result is best else None
                 log_run_to_mlflow(result, x_test, y_test, cv, scoring, register_as=register_as)
