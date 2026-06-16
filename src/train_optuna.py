@@ -3,6 +3,7 @@
 Compare Random Forest, XGBoost et LightGBM avec un espace de recherche Optuna,
 puis sauvegarde le meilleur modele dans `models/model.joblib`.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -91,7 +92,9 @@ def build_model_specs() -> list[ModelSpec]:
         }
 
     def lgbm_builder(params: dict) -> ClassifierMixin:
-        return cast(ClassifierMixin, LGBMClassifier(random_state=RANDOM_STATE, verbose=-1, **params))
+        return cast(
+            ClassifierMixin, LGBMClassifier(random_state=RANDOM_STATE, verbose=-1, **params)
+        )
 
     return [
         ModelSpec("random_forest", rf_params, rf_builder),
@@ -250,12 +253,21 @@ def describe_registered_version(
         f"Scores: cv_roc_auc={result.study.best_value:.3f}, test_roc_auc={result.test_roc_auc:.3f}"
     )
     client.update_model_version(name=name, version=version_str, description=description)
-    client.set_model_version_tag(name=name, version=version_str, key="model_family", value=result.spec.name)
-    client.set_model_version_tag(name=name, version=version_str, key="search_method", value="Optuna-TPE")
-    client.set_model_version_tag(name=name, version=version_str, key="n_trials", value=str(n_trials))
+    client.set_model_version_tag(
+        name=name, version=version_str, key="model_family", value=result.spec.name
+    )
+    client.set_model_version_tag(
+        name=name, version=version_str, key="search_method", value="Optuna-TPE"
+    )
+    client.set_model_version_tag(
+        name=name, version=version_str, key="n_trials", value=str(n_trials)
+    )
     client.set_model_version_tag(name=name, version=version_str, key="cv", value=str(cv))
     client.set_model_version_tag(
-        name=name, version=version_str, key="cv_roc_auc", value=f"{float(result.study.best_value):.4f}"
+        name=name,
+        version=version_str,
+        key="cv_roc_auc",
+        value=f"{float(result.study.best_value):.4f}",
     )
     client.set_model_version_tag(
         name=name, version=version_str, key="test_roc_auc", value=f"{result.test_roc_auc:.4f}"
@@ -288,9 +300,7 @@ def optimize(n_trials: int = 30, cv: int = 5, use_mlflow: bool = True) -> list[F
             mlflow.log_metric("best_test_roc_auc", best.test_roc_auc)
             for result in results:
                 register_as = MODEL_NAME if result is best else None
-                log_family_to_mlflow(
-                    result, x_test, y_test, n_trials, cv, register_as=register_as
-                )
+                log_family_to_mlflow(result, x_test, y_test, n_trials, cv, register_as=register_as)
         logger.info("Meilleur modele enregistre dans le registry sous '%s'", MODEL_NAME)
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)

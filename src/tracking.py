@@ -1,4 +1,5 @@
 """Configuration partagee du suivi MLflow."""
+
 from __future__ import annotations
 
 import logging
@@ -32,5 +33,5 @@ def setup_experiment() -> None:
 
 def log_dataset(df: pd.DataFrame, context: str, name: str = "dataset") -> None:
     """Log a pandas dataset lineage entry in the current MLflow run."""
-    dataset = mlflow.data.from_pandas(df, source=str(DATA_PATH), targets=TARGET, name=name)
+    dataset = mlflow.data.from_pandas(df, source=str(DATA_PATH), targets=TARGET, name=name)  # type: ignore[attr-defined]
     mlflow.log_input(dataset, context=context)

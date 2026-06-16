@@ -1,4 +1,5 @@
 """Evaluation automatisee et validation du modele."""
+
 from __future__ import annotations
 
 import argparse
@@ -57,7 +58,7 @@ def evaluate_model(model_uri: str | None = None, validate: bool = True):
     logger.info("Evaluation de %s", model_uri)
 
     with mlflow.start_run(run_name="evaluate"):
-        dataset = mlflow.data.from_pandas(
+        dataset = mlflow.data.from_pandas(  # type: ignore[attr-defined]
             eval_df,
             source=str(DATA_PATH),
             targets=TARGET,

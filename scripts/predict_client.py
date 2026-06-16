@@ -3,6 +3,7 @@
 Envoie quelques payloads de test a une instance locale de l'API et affiche les
 reponses de `/health`, `/predict` et `/model-info`.
 """
+
 from __future__ import annotations
 
 import argparse

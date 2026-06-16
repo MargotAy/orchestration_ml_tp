@@ -1,4 +1,5 @@
 """Chargement et decoupage des donnees."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -22,22 +23,29 @@ def load_data(path=DATA_PATH) -> pd.DataFrame:
         df = df.dropna()
     else:
         print("Aucune valeur manquante")
-    
 
     # Modification de la colonne AgeCategory on réduit le nombre de groupes pour en avoir que 4
     AGE_GROUPS = {
-    "18-24": "18-39", "25-29": "18-39", "30-34": "18-39", "35-39": "18-39",
-    "40-44": "40-54", "45-49": "40-54", "50-54": "40-54",
-    "55-59": "55-69", "60-64": "55-69", "65-69": "55-69",
-    "70-74": "70+", "75-79": "70+", "80 or older": "70+",
+        "18-24": "18-39",
+        "25-29": "18-39",
+        "30-34": "18-39",
+        "35-39": "18-39",
+        "40-44": "40-54",
+        "45-49": "40-54",
+        "50-54": "40-54",
+        "55-59": "55-69",
+        "60-64": "55-69",
+        "65-69": "55-69",
+        "70-74": "70+",
+        "75-79": "70+",
+        "80 or older": "70+",
     }
     df["AgeCategory"] = df["AgeCategory"].map(AGE_GROUPS)
 
     # Undersampling : équilibrage des classes
-    df_minority = df[df[TARGET] == 1]           # ~27 000 malades
-    df_majority = df[df[TARGET] == 0].sample(   # on garde ~27 000 sains
-        n=len(df_minority),
-        random_state=RANDOM_STATE
+    df_minority = df[df[TARGET] == 1]  # ~27 000 malades
+    df_majority = df[df[TARGET] == 0].sample(  # on garde ~27 000 sains
+        n=len(df_minority), random_state=RANDOM_STATE
     )
 
     df_balanced = pd.concat([df_minority, df_majority])
@@ -47,7 +55,6 @@ def load_data(path=DATA_PATH) -> pd.DataFrame:
     print(f"Distribution :\n{df_balanced[TARGET].value_counts()}")
 
     return df_balanced
-
 
 
 def split(df: pd.DataFrame, test_size: float = 0.2):

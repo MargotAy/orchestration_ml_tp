@@ -43,6 +43,7 @@ target-version = "py313"
 
 [tool.mypy]
 python_version = "3.13"
+explicit_package_bases = true
 
 # Le stack scientifique ne fournit pas de stubs de types : on ignore les
 # imports non types pour ces librairies, tout en gardant mypy strict sur src/.
@@ -52,6 +53,7 @@ module = [
   "pandas.*",
   "joblib.*",
   "mlflow.*",
+  "mlflow.data.*",
   "optuna.*",
   "shap.*",
   "xgboost.*",

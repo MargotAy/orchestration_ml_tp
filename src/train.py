@@ -1,4 +1,5 @@
 """Entrainement du modele baseline - Classification maladie cardiaque."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,10 +14,12 @@ from src.features import build_preprocessor
 
 
 def build_model() -> Pipeline:
-    return Pipeline(steps=[
-        ("preprocessor", build_preprocessor()),
-        ("clf", LogisticRegression(max_iter=1000)),
-    ])
+    return Pipeline(
+        steps=[
+            ("preprocessor", build_preprocessor()),
+            ("clf", LogisticRegression(max_iter=1000)),
+        ]
+    )
 
 
 def train() -> None:

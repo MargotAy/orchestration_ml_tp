@@ -4,9 +4,9 @@ C'est le SEUL fichier a adapter pour brancher votre propre jeu de donnees :
 data.py, features.py et les scripts d'entrainement lisent toutes leurs
 colonnes via ces constantes. Voir tp/TP_S0_projet_personnel.md.
 """
+
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -26,7 +26,21 @@ TARGET = "HeartDisease"
 NUMERIC_FEATURES: list[str] = ["BMI", "PhysicalHealth", "MentalHealth", "SleepTime"]
 
 # TODO (S0-4) : colonnes categorielles (peut rester vide : [])
-CATEGORICAL_FEATURES: list[str] = ["Smoking", "AlcoholDrinking", "Stroke", "DiffWalking", "Sex", "AgeCategory", "Race", "Diabetic", "PhysicalActivity", "GenHealth", "Asthma", "KidneyDisease", "SkinCancer"]
+CATEGORICAL_FEATURES: list[str] = [
+    "Smoking",
+    "AlcoholDrinking",
+    "Stroke",
+    "DiffWalking",
+    "Sex",
+    "AgeCategory",
+    "Race",
+    "Diabetic",
+    "PhysicalActivity",
+    "GenHealth",
+    "Asthma",
+    "KidneyDisease",
+    "SkinCancer",
+]
 
 RANDOM_STATE = 42
 

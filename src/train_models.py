@@ -8,6 +8,7 @@ Lancement :
     PYTHONPATH=. python -m src.train_models --cv 3 --scoring roc_auc
     PYTHONPATH=. python -m src.train_models --no-mlflow
 """
+
 from __future__ import annotations
 
 import argparse
@@ -88,41 +89,36 @@ def build_model_specs() -> list[ModelSpec]:
                 "clf__n_estimators": [100, 200],
                 "clf__max_depth": [None, 10, 20],
                 "clf__min_samples_leaf": [1, 2],
-            }
+            },
         ),
         ModelSpec(
             name="xgboost",
-            estimator=XGBClassifier(
-                random_state=RANDOM_STATE,
-                eval_metric="logloss",
-                n_jobs=-1
-            ),
+            estimator=XGBClassifier(random_state=RANDOM_STATE, eval_metric="logloss", n_jobs=-1),
             param_grid={
                 "clf__n_estimators": [100, 200],
                 "clf__max_depth": [3, 5],
                 "clf__learning_rate": [0.1, 0.01],
-            }
+            },
         ),
         ModelSpec(
             name="lightgbm",
-            estimator=LGBMClassifier(
-                random_state=RANDOM_STATE,
-                verbose=-1
-            ),
+            estimator=LGBMClassifier(random_state=RANDOM_STATE, verbose=-1),
             param_grid={
                 "clf__n_estimators": [100, 200],
                 "clf__num_leaves": [31, 63],
                 "clf__learning_rate": [0.1, 0.01],
-            }
+            },
         ),
     ]
 
 
 def build_pipeline(estimator: ClassifierMixin) -> Pipeline:
-    return Pipeline(steps=[
-        ("preprocessor", build_preprocessor()),
-        ("clf", estimator),
-    ])
+    return Pipeline(
+        steps=[
+            ("preprocessor", build_preprocessor()),
+            ("clf", estimator),
+        ]
+    )
 
 
 def optimize_model(
@@ -142,7 +138,7 @@ def optimize_model(
         cv=cv,
         scoring=scoring,
         n_jobs=-1,
-        refit=True
+        refit=True,
     )
     search.fit(x_train, y_train)
 
@@ -180,13 +176,15 @@ def log_run_to_mlflow(
         mlflow.log_params(result.best_params)
 
         # Métriques — precision et recall ajoutés car contexte médical
-        mlflow.log_metrics({
-            f"cv_{scoring}": result.cv_score,
-            "f1": result.f1,
-            "roc_auc": result.roc_auc,
-            "precision": result.precision,
-            "recall": result.recall,  # crucial : ne pas rater un malade
-        })
+        mlflow.log_metrics(
+            {
+                f"cv_{scoring}": result.cv_score,
+                "f1": result.f1,
+                "roc_auc": result.roc_auc,
+                "precision": result.precision,
+                "recall": result.recall,  # crucial : ne pas rater un malade
+            }
+        )
 
         # Matrice de confusion
         cm = confusion_matrix(y_test, result.preds)
@@ -233,9 +231,9 @@ def describe_registered_version(
 
     Ajoute une description (algorithme, hyperparametres, metriques) et des
     tags (famille de modele, methode de recherche, scores) sur la version du
-    modele afin de pouvoir comparer les versions sans rouvrir le run MLflow.   
+    modele afin de pouvoir comparer les versions sans rouvrir le run MLflow.
 
-    Paramètres : 
+    Paramètres :
         name: nom du modele
         version: version du modele enregistrée
         result: resultat de l'entrainement (f1, roc_auc, precision, recall)
@@ -252,16 +250,24 @@ def describe_registered_version(
         f"precision={result.precision:.3f}, recall={result.recall:.3f}"
     )
     client.update_model_version(name=name, version=version_str, description=description)
-    client.set_model_version_tag(name=name, version=version_str, key="model_family", value=result.name)
-    client.set_model_version_tag(name=name, version=version_str, key="search_method", value="GridSearchCV")
+    client.set_model_version_tag(
+        name=name, version=version_str, key="model_family", value=result.name
+    )
+    client.set_model_version_tag(
+        name=name, version=version_str, key="search_method", value="GridSearchCV"
+    )
     client.set_model_version_tag(name=name, version=version_str, key="cv", value=str(cv))
     client.set_model_version_tag(name=name, version=version_str, key="scoring", value=scoring)
     client.set_model_version_tag(name=name, version=version_str, key="f1", value=f"{result.f1:.4f}")
-    client.set_model_version_tag(name=name, version=version_str, key="roc_auc", value=f"{result.roc_auc:.4f}")
+    client.set_model_version_tag(
+        name=name, version=version_str, key="roc_auc", value=f"{result.roc_auc:.4f}"
+    )
     client.set_model_version_tag(
         name=name, version=version_str, key="precision", value=f"{result.precision:.4f}"
     )
-    client.set_model_version_tag(name=name, version=version_str, key="recall", value=f"{result.recall:.4f}")
+    client.set_model_version_tag(
+        name=name, version=version_str, key="recall", value=f"{result.recall:.4f}"
+    )
 
 
 def train_all(
@@ -290,12 +296,14 @@ def train_all(
             mlflow.log_param("cv", cv)
             mlflow.log_param("scoring", scoring)
             mlflow.set_tag("best_model", best.name)
-            mlflow.log_metrics({
-                "best_f1": best.f1,
-                "best_roc_auc": best.roc_auc,
-                "best_precision": best.precision,
-                "best_recall": best.recall,
-            })
+            mlflow.log_metrics(
+                {
+                    "best_f1": best.f1,
+                    "best_roc_auc": best.roc_auc,
+                    "best_precision": best.precision,
+                    "best_recall": best.recall,
+                }
+            )
             for result in results:
                 register_as = MODEL_NAME if result is best else None
                 log_run_to_mlflow(result, x_test, y_test, cv, scoring, register_as=register_as)

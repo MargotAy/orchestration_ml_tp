@@ -3,6 +3,7 @@
 Seance 12 - TP FastAPI
     Lancement : `uv run uvicorn src.api:app --reload`
 """
+
 from __future__ import annotations
 
 import logging
@@ -106,7 +107,7 @@ def predict(features: Features) -> PredictionOut:
     if model is None:
         raise HTTPException(status_code=503, detail="Modele non charge")
     row = pd.DataFrame([features.model_dump()])
-    proba = float(model.predict_proba(row)[0, 1])  # type: ignore[union-attr]
+    proba = float(model.predict_proba(row)[0, 1])  # type: ignore[attr-defined]
     return PredictionOut(prediction=int(proba >= 0.5), probability=round(proba, 4))
 
 
