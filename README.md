@@ -27,3 +27,11 @@ Si le dataset n'était pas préalablement nettoyé, c'est dans ces fichiers que 
 On implémente un modèle de Régression Logistique en baseline pour répondre à la question : 
 "Quelle est la probabilité d'un patient ait une maladie cardiaque en fonction de ses facteurs ?" 
 On utilise la régression logistique car nous voulons une solution binaire (est-ce que le patient pourrait avoir une maladie cardiaque *oui* ou *non*)
+
+## train_models.py
+Permet de comparer plusieurs modèles avec des paramètres différents
+on visualise les résultats sur MLFLOW 
+On peut y voir les expériences, qui contiennent des runs, 
+
+## tracking.py 
+Permet de rcentraliser le tracking mlflow pour le réutiliser dans différents fichiers comme train.py et train_models.py 
