@@ -3,3 +3,5 @@ mlflow.db
 uv.lock
 mlartifacts/
 mlruns/
+__pycache__/
+*.py[cod]
