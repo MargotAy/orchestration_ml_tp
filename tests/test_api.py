@@ -43,6 +43,13 @@ def test_predict_endpoint_returns_valid_prediction() -> None:
     assert 0.0 <= body["probability"] <= 1.0
 
 
+def test_predict_rejects_invalid_age_category() -> None:
+    invalid_payload = {**VALID_PAYLOAD, "AgeCategory": "55-59"}
+    with TestClient(app) as client:
+        response = client.post("/predict", json=invalid_payload)
+    assert response.status_code == 422
+
+
 def test_model_info_endpoint() -> None:
     with TestClient(app) as client:
         response = client.get("/model-info")

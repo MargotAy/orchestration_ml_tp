@@ -22,13 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout du depot
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Installation de uv (avec cache)
         uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
+          python-version-file: .python-version
 
       - name: Installation des dependances (projet + dev)
         run: uv sync --extra dev
@@ -48,13 +49,14 @@ jobs:
     needs: quality
     steps:
       - name: Checkout du depot
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Installation de uv (avec cache)
         uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
+          python-version-file: .python-version
 
       - name: Installation des dependances
         run: uv sync
