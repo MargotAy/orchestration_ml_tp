@@ -1,0 +1,15 @@
+FROM python:3.13-slim
+ENV PYTHONUNBUFFERED=1  PYTHONPATH=/app
+WORKDIR /app
+
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir .
+
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml uv.lock ./
+COPY src ./src
+
+COPY data/ ./data/
+CMD ["python", "-m", "src.train"] 

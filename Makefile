@@ -133,17 +133,17 @@ frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
 # Docker  [A COMPLETER]
 # ==============================================================================
 
-docker-build: ## Construit l'image d'entrainement
-	# TODO (S8) : docker build -f docker/Dockerfile.train -t mlproject-train .
+docker-build: ## Construit les images train et api
+	docker compose build train api
 
-docker-run: ## Lance l'entrainement en conteneur
-	# TODO (S8) : docker run --rm -v "$(CURDIR)/../models:/app/models" mlproject-train
+docker-run: ## Lance l'entrainement one-shot (profil train)
+	docker compose --profile train run --rm train
 
-docker-up: ## Demarre la stack (mlflow, api, frontend)
-	# TODO (S14) : docker compose -f docker-compose.yml up -d --build mlflow api frontend
+docker-up: ## Demarre la stack (mlflow, api)
+	docker compose up -d --build mlflow api
 
-docker-down: ## Arrete et supprime les conteneurs (conserve les volumes)
-	# TODO (S14) : docker compose -f docker-compose.yml down
+docker-down: ## Arrete les conteneurs (conserve les volumes)
+	docker compose down
 
 
 # ==============================================================================
