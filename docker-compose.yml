@@ -1,0 +1,76 @@
+# Seance 14 - TP docker-compose : orchestrez votre stack de classification.
+# Squelette a completer (marqueurs TODO S14-n). Voir tp/TP_S14_docker_compose.md.
+#
+# Commandes :
+#   docker compose up -d mlflow
+#   docker compose --profile train run --rm train
+#   docker compose up -d api
+#   -> API : http://localhost:8000  |  MLflow : http://localhost:5000
+
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.13.0
+    command: >
+      mlflow server
+      --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --artifacts-destination /mlflow/artifacts
+      --serve-artifacts
+      --allowed-hosts "*"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+
+  train:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.train
+    # Entraine et ecrit models/model.joblib dans le volume partage models_data.
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    depends_on:
+      - mlflow
+    volumes:
+      - models_data:/app/models
+    # Le profil "train" evite que ce service one-shot demarre avec `up`.
+    profiles:
+      - train
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - models_data:/app/models:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
+    profiles:
+      - frontend
+
+volumes:
+  mlflow_data:
+  models_data:
