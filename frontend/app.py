@@ -12,6 +12,7 @@ import httpx
 import mlflow
 import pandas as pd
 import streamlit as st
+import altair as alt
 from mlflow.tracking import MlflowClient
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,77 +41,316 @@ DEFAULT_VALUES: dict[str, float | str] = {
     "SkinCancer": "No",
 }
 
-PAGES: dict[str, str] = {
-    "accueil": "🏠 Accueil",
-    "rapide": "⚡ Estimation rapide",
-    "complet": "📋 Estimation complète",
-    "metrics": "📈 Métriques MLflow",
-    "history": "📊 Historique",
+PAGE_LABELS: dict[str, str] = {
+    "accueil": "Accueil",
+    "rapide": "Estimation rapide",
+    "complet": "Estimation complète",
+    "metrics": "Métriques",
+    "history": "Historique",
 }
 
-DIABETIC_OPTIONS = ["Yes", "No", "No, borderline diabetes", "Yes (during pregnancy)"]
-GEN_HEALTH_OPTIONS = ["Poor", "Fair", "Good", "Very good", "Excellent"]
+PAGE_ICONS: dict[str, str] = {
+    "accueil": "🏠",
+    "rapide": "⚡",
+    "complet": "📋",
+    "metrics": "📈",
+    "history": "📊",
+}
+
+PAGE_KEYS = list(PAGE_LABELS.keys())
+
+AUTHOR_NAME = "Margot AYAZ"
+AUTHOR_CLASS = "5IABD2"
+PROFESSOR_NAME = "Lewis HOUNKPEVI"
+GITHUB_REPO = "https://github.com/MargotAy/orchestration_ml_tp"
+KAGGLE_DATASET = (
+    "https://www.kaggle.com/datasets/kamilpytlak/personal-key-indicators-of-heart-disease/data"
+)
 
 # ---------------------------------------------------------------------------
 # Page config & styles
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="Prédiction cardiaque",
+    page_title="CardioPredict",
     page_icon="🫀",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
     """
     <style>
-    .block-container { padding-top: 1.5rem; max-width: 1100px; }
-    .hero {
-        background: linear-gradient(135deg, #1e3a5f 0%, #2d6a8f 50%, #3d8b6e 100%);
-        border-radius: 16px;
-        padding: 2rem 2.5rem;
-        color: white;
-        margin-bottom: 1.5rem;
+    :root {
+        --accent: #e11d48;
+        --accent-dark: #be123c;
+        --accent-soft: #fff1f2;
+        --accent-glow: #fecdd3;
+        --text-muted: #78716c;
+        --border: rgba(244, 63, 94, 0.32);
+        --surface: rgba(255, 255, 255, 0.82);
     }
-    .hero h1 { color: white; font-size: 2rem; margin: 0 0 0.5rem 0; }
-    .hero p { color: rgba(255,255,255,0.88); margin: 0; font-size: 1.05rem; }
-    .info-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 1.25rem 1.5rem;
-        background: #f8fafc;
-        height: 100%;
+    .stApp {
+        background: linear-gradient(
+            165deg,
+            #fff5f5 0%,
+            #ffffff 35%,
+            #fff8f8 70%,
+            #ffffff 100%
+        );
     }
-    .info-card h3 { margin-top: 0; color: #1e3a5f; }
+    section[data-testid="stSidebar"] { display: none; }
+    section[data-testid="stMain"] > div { max-width: 100%; }
+    .main .block-container {
+        padding-top: 1.25rem;
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
+        max-width: 100%;
+    }
+    .top-brand {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--accent-dark);
+        margin-bottom: 0.25rem;
+    }
+    .author-badge {
+        display: inline-block;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--accent-dark);
+        background: var(--accent-soft);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.3rem 0.85rem;
+        margin-bottom: 1.25rem;
+    }
+    .context-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.15rem 1.35rem;
+        margin: 1rem 0 1.5rem 0;
+        font-size: 0.92rem;
+        line-height: 1.65;
+        color: #44403c;
+    }
+    .context-box a { color: var(--accent-dark); text-decoration: none; font-weight: 500; }
+    .context-box a:hover { text-decoration: underline; }
+    /* Navigation horizontale (style onglets) */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        gap: 0.35rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.65rem;
+        margin-bottom: 1.25rem;
+    }
+    div[data-testid="stRadio"] label {
+        background: transparent !important;
+        padding: 0.55rem 1rem !important;
+        border-radius: 8px !important;
+        border: 1px solid transparent !important;
+        color: #57534e !important;
+        font-weight: 500;
+    }
+    div[data-testid="stRadio"] label:has(input:checked) {
+        background: var(--accent-soft) !important;
+        color: var(--accent-dark) !important;
+        border-color: rgba(244, 63, 94, 0.22) !important;
+    }
+    /* Cartes cliquables de l'accueil */
+    .feature-cards [data-testid="stButton"] button {
+        min-height: 11rem;
+        white-space: pre-wrap;
+        text-align: left;
+        padding: 1.2rem 1.3rem !important;
+        line-height: 1.55;
+        font-size: 0.875rem !important;
+        background: rgba(255, 255, 255, 0.92) !important;
+        border: 1px solid rgba(244, 63, 94, 0.28) !important;
+        color: #44403c !important;
+        border-radius: 12px !important;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+    .feature-cards [data-testid="stButton"] button:hover {
+        border-color: var(--accent) !important;
+        background: var(--accent-soft) !important;
+        box-shadow: 0 4px 14px rgba(225, 29, 72, 0.08);
+        color: #1c1917 !important;
+    }
+    .feature-cards [data-testid="stButton"] button p {
+        font-size: 0.875rem !important;
+    }
+    header[data-testid="stHeader"] { background: transparent; }
+    .page-header { margin-bottom: 1.75rem; }
+    .page-header .page-title {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 1.75rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.35rem 0;
+        line-height: 1.2;
+        color: #1c1917;
+    }
+    .page-header h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.35rem 0;
+        line-height: 1.2;
+    }
+    .page-header p {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+    .page-header .accent-bar {
+        width: 2.5rem;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), var(--accent-glow));
+        border-radius: 2px;
+        margin-bottom: 1rem;
+    }
+    .features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 1.75rem 0;
+    }
+    @media (max-width: 768px) {
+        .features { grid-template-columns: 1fr; }
+    }
+    .feature {
+        display: flex;
+        flex-direction: column;
+        min-height: 11rem;
+        padding: 1.25rem 1.35rem;
+        border: 1px solid rgba(244, 63, 94, 0.28);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.92);
+    }
+    .feature-top {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.75rem;
+    }
+    .feature-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.1rem;
+        height: 2.1rem;
+        font-size: 1.1rem;
+        border-radius: 9px;
+        background: var(--accent-soft);
+        flex-shrink: 0;
+    }
+    .feature-tag {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--accent-dark);
+        margin-bottom: 0;
+    }
+    .feature h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.3;
+        color: #1c1917;
+    }
+    .feature p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.55;
+        flex-grow: 1;
+    }
+    .disclaimer {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        border-left: 3px solid var(--accent-glow);
+        padding: 0.5rem 0 0.5rem 1rem;
+        margin-top: 2rem;
+    }
+    .intro-text {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        line-height: 1.65;
+        margin: 0 0 1.25rem 0;
+    }
+    .cta-text {
+        font-size: 1rem;
+        line-height: 1.6;
+        margin: 0.5rem 0 1rem 0;
+        color: #44403c;
+    }
+    /* Lisibilité : texte sombre sur fond clair (thème Streamlit forcé en light) */
+    .stApp, .stApp [data-testid="stAppViewContainer"] {
+        color: #1c1917;
+    }
+    .main p, .main li, .main label, .main h1, .main h2, .main h3, .main h4,
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li {
+        color: #44403c;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #57534e !important;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #1c1917 !important;
+    }
+    div[data-testid="stMetricLabel"] p {
+        color: #78716c !important;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255, 255, 255, 0.9) !important;
+        border-color: rgba(244, 63, 94, 0.25) !important;
+    }
+    [data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+    }
+    [data-testid="stExpander"] summary span {
+        color: #44403c !important;
+    }
+    .stCaption, .stCaption p, small {
+        color: #78716c !important;
+    }
+    /* Boutons primaires (Lancer la prédiction) */
+    button[kind="primary"],
+    [data-testid="stBaseButton-primary"] button,
+    [data-testid="stFormSubmitButton"] button {
+        background-color: #be123c !important;
+        color: #ffffff !important;
+        border: 1px solid #be123c !important;
+        font-weight: 600;
+    }
+    button[kind="primary"]:hover,
+    [data-testid="stBaseButton-primary"] button:hover,
+    [data-testid="stFormSubmitButton"] button:hover {
+        background-color: #9f1239 !important;
+        border-color: #9f1239 !important;
+        color: #ffffff !important;
+    }
+    button[kind="primary"] p,
+    [data-testid="stBaseButton-primary"] button p,
+    [data-testid="stFormSubmitButton"] button p {
+        color: #ffffff !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-if "nav_page" not in st.session_state:
-    st.session_state.nav_page = "accueil"
-
-PAGE_KEYS = list(PAGES.keys())
-
-# ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
-
-with st.sidebar:
-    st.markdown("### 🫀 Navigation")
-    selected_page = st.radio(
-        "Aller à",
-        options=PAGE_KEYS,
-        format_func=lambda k: PAGES[k],
-        index=PAGE_KEYS.index(st.session_state.nav_page),
-    )
-    st.session_state.nav_page = selected_page
-    st.divider()
-    st.markdown("### ⚙️ Configuration")
-    api_url = st.text_input("URL de l'API", value=API_URL)
-    mlflow_uri = st.text_input("MLflow tracking URI", value=MLFLOW_TRACKING_URI)
-    mlflow_ui = st.text_input("MLflow UI (lien)", value=MLFLOW_UI_URL)
+DIABETIC_OPTIONS = ["Yes", "No", "No, borderline diabetes", "Yes (during pregnancy)"]
+GEN_HEALTH_OPTIONS = ["Poor", "Fair", "Good", "Very good", "Excellent"]
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -144,6 +384,145 @@ def fmt_gen_health(value: str) -> str:
     }[value]
 
 
+def page_header(title: str, subtitle: str, icon: str = "") -> None:
+    title_html = (
+        f'<div class="page-title"><span>{icon}</span>{title}</div>'
+        if icon
+        else f"<h1>{title}</h1>"
+    )
+    st.markdown(
+        f"""
+        <div class="page-header">
+            <div class="accent-bar"></div>
+            {title_html}
+            <p>{subtitle}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def intro_text(text: str) -> None:
+    st.markdown(f'<p class="intro-text">{text}</p>', unsafe_allow_html=True)
+
+
+FEATURE_CARDS: list[tuple[str, str, str, str]] = [
+    (
+        "rapide",
+        "⚡ Estimation rapide",
+        "7 critères essentiels : âge, sexe, tabac, IMC, diabète, activité physique et santé générale.",
+    ),
+    (
+        "complet",
+        "📋 Estimation complète",
+        "Les 17 variables du modèle pour une prédiction plus personnalisée et affinée.",
+    ),
+    (
+        "metrics",
+        "📈 Métriques MLflow",
+        "Performances des modèles entraînés : ROC-AUC, F1, précision et rappel.",
+    ),
+]
+
+
+def render_feature_cards() -> None:
+    """Cartes cliquables de l'accueil → changent l'onglet actif."""
+    st.markdown('<div class="feature-cards">', unsafe_allow_html=True)
+    cols = st.columns(3)
+    for col, (page_key, title, description) in zip(cols, FEATURE_CARDS, strict=True):
+        with col:
+            label = f"{title}\n\n{description}\n\n→ Accéder"
+            if st.button(label, key=f"nav_card_{page_key}", use_container_width=True, type="secondary"):
+                st.session_state.nav_page = page_key
+                st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+METRIC_DEFINITIONS: list[dict[str, str | float]] = [
+    {
+        "key": "roc_auc",
+        "label": "ROC-AUC",
+        "definition": (
+            "Aire sous la courbe ROC : mesure la capacité du modèle à **distinguer** "
+            "les patients avec maladie cardiaque de ceux sans, quel que soit le seuil de décision."
+        ),
+        "interpretation": (
+            "**Quand c'est bon ?** ≥ 0,80 : excellente discrimination. "
+            "Entre 0,70 et 0,80 : correct. En dessous de 0,70 : le modèle peine à séparer les classes."
+        ),
+        "good": 0.80,
+        "ok": 0.70,
+    },
+    {
+        "key": "f1_score",
+        "label": "F1-score",
+        "definition": (
+            "Moyenne harmonique de la **précision** et du **rappel**. "
+            "Synthèse utile quand les classes sont déséquilibrées (peu de malades dans les données)."
+        ),
+        "interpretation": (
+            "**Quand c'est bon ?** ≥ 0,80 : bon équilibre global. "
+            "Entre 0,70 et 0,80 : acceptable. En dessous de 0,70 : performances insuffisantes."
+        ),
+        "good": 0.80,
+        "ok": 0.70,
+    },
+    {
+        "key": "precision_score",
+        "label": "Précision",
+        "definition": (
+            "Parmi les patients prédits **à risque**, quelle proportion l'est **réellement** ? "
+            "Une précision élevée limite les **faux positifs** (alertes inutiles)."
+        ),
+        "interpretation": (
+            "**Quand c'est bon ?** ≥ 0,75 : peu de fausses alertes. "
+            "Entre 0,65 et 0,75 : modéré. En dessous de 0,65 : trop de patients sains classés à risque."
+        ),
+        "good": 0.75,
+        "ok": 0.65,
+    },
+    {
+        "key": "recall_score",
+        "label": "Rappel",
+        "definition": (
+            "Parmi les patients **réellement malades**, quelle proportion le modèle **détecte** ? "
+            "Un rappel élevé limite les **faux négatifs** — crucial en contexte médical."
+        ),
+        "interpretation": (
+            "**Quand c'est bon ?** ≥ 0,80 : la majorité des malades sont repérés. "
+            "Entre 0,70 et 0,80 : correct. En dessous de 0,70 : trop de malades passent inaperçus."
+        ),
+        "good": 0.80,
+        "ok": 0.70,
+    },
+]
+
+
+def metric_verdict(value: float, good: float, ok: float) -> tuple[str, str]:
+    if value >= good:
+        return "Bon", "success"
+    if value >= ok:
+        return "Correct", "warning"
+    return "À améliorer", "error"
+
+
+def render_metric_explainer(metric_key: str, value: float) -> None:
+    info = next(m for m in METRIC_DEFINITIONS if m["key"] == metric_key)
+    label = str(info["label"])
+    verdict, level = metric_verdict(value, float(info["good"]), float(info["ok"]))
+    message = f"**{label}** — {value:.3f} · *{verdict}*"
+
+    if level == "success":
+        st.success(message)
+    elif level == "warning":
+        st.warning(message)
+    else:
+        st.error(message)
+
+    st.markdown(str(info["definition"]))
+    st.caption(str(info["interpretation"]))
+
+
 def bmi_category(bmi: float) -> str:
     if bmi < 18.5:
         return "Insuffisance pondérale"
@@ -156,49 +535,52 @@ def bmi_category(bmi: float) -> str:
 
 def render_bmi_section(key: str, default: float = 27.3) -> float:
     """Calculateur IMC en temps réel (hors formulaire pour mise à jour live)."""
-    st.markdown("**IMC (indice de masse corporelle)**")
-    method = st.radio(
-        "Comment renseigner votre IMC ?",
-        ["Calculer à partir du poids et de la taille", "Je connais déjà mon IMC"],
-        horizontal=True,
-        key=f"{key}_bmi_method",
-    )
-    if method.startswith("Calculer"):
-        c1, c2 = st.columns(2)
-        with c1:
-            weight = st.number_input(
-                "Poids (kg)",
-                min_value=30.0,
-                max_value=300.0,
-                value=70.0,
-                step=0.5,
-                key=f"{key}_weight",
-            )
-        with c2:
-            height = st.number_input(
-                "Taille (cm)",
-                min_value=100.0,
-                max_value=250.0,
-                value=170.0,
-                step=0.5,
-                key=f"{key}_height",
-            )
-        bmi = round(weight / (height / 100) ** 2, 1)
-        st.info(f"📐 Votre IMC estimé : **{bmi}** — {bmi_category(bmi)}")
-        with st.expander("Comment est calculé l'IMC ?"):
-            st.markdown(
-                "L'IMC se calcule ainsi : **poids (kg) ÷ taille (m)²**\n\n"
-                f"Exemple : {weight} ÷ ({height / 100:.2f})² = **{bmi}**"
-            )
-        return bmi
-    return st.number_input(
-        "IMC",
-        min_value=10.0,
-        max_value=60.0,
-        value=default,
-        step=0.1,
-        key=f"{key}_bmi_direct",
-    )
+    with st.container(border=True):
+        st.markdown("**⚖️ Indice de masse corporelle**")
+        st.caption(
+            "Vous ne connaissez pas votre IMC ? On vous aide : entrez votre poids et votre taille, "
+            "ou saisissez-le directement si vous l'avez déjà."
+        )
+        method = st.radio(
+            "Comment renseigner votre IMC ?",
+            ["Calculer (poids & taille)", "Saisir directement"],
+            horizontal=True,
+            key=f"{key}_bmi_method",
+            label_visibility="collapsed",
+        )
+        if method.startswith("Calculer"):
+            c1, c2 = st.columns(2)
+            with c1:
+                weight = st.number_input(
+                    "Poids (kg)",
+                    min_value=30.0,
+                    max_value=300.0,
+                    value=70.0,
+                    step=0.5,
+                    key=f"{key}_weight",
+                )
+            with c2:
+                height = st.number_input(
+                    "Taille (cm)",
+                    min_value=100.0,
+                    max_value=250.0,
+                    value=170.0,
+                    step=0.5,
+                    key=f"{key}_height",
+                )
+            bmi = round(weight / (height / 100) ** 2, 1)
+            st.caption(f"IMC estimé : **{bmi}** · {bmi_category(bmi)}")
+            with st.expander("Formule"):
+                st.markdown(f"`{weight} ÷ ({height / 100:.2f})² = {bmi}`")
+            return bmi
+        return st.number_input(
+            "IMC",
+            min_value=10.0,
+            max_value=60.0,
+            value=default,
+            step=0.1,
+            key=f"{key}_bmi_direct",
+        )
 
 
 def build_payload(**kwargs: float | str) -> dict[str, float | str]:
@@ -207,7 +589,7 @@ def build_payload(**kwargs: float | str) -> dict[str, float | str]:
     return payload
 
 
-def call_predict(payload: dict[str, float | str]) -> dict | None:
+def call_predict(api_url: str, payload: dict[str, float | str]) -> dict | None:
     try:
         response = httpx.post(f"{api_url}/predict", json=payload, timeout=10.0)
         response.raise_for_status()
@@ -224,32 +606,52 @@ def display_result(result: dict, mode: str) -> None:
     risk_pct = proba * 100
 
     label = "Risque élevé" if is_risk else "Risque faible"
-    emoji = "⚠️" if is_risk else "✅"
-    mode_label = "rapide (valeurs par défaut pour les critères secondaires)" if mode == "rapide" else "complet"
+    mode_label = "rapide" if mode == "rapide" else "complet"
 
-    st.markdown("### Résultat de la prédiction")
+    with st.container(border=True):
+        st.markdown("**🔮 Résultat**")
+        if is_risk:
+            st.error(f"⚠️ **{label}** — probabilité estimée : **{risk_pct:.1f} %**")
+        else:
+            st.success(f"✅ **{label}** — probabilité estimée : **{risk_pct:.1f} %**")
 
-    if is_risk:
-        st.error(f"{emoji} **{label}** — probabilité estimée : **{risk_pct:.1f} %**")
-    else:
-        st.success(f"{emoji} **{label}** — probabilité estimée : **{risk_pct:.1f} %**")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Diagnostic", label)
+        with col2:
+            st.metric("Probabilité", f"{risk_pct:.1f} %")
+        with col3:
+            st.metric("Prédiction", "Positive" if prediction == 1 else "Négative")
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Diagnostic", label)
-    with col2:
-        st.metric("Probabilité", f"{risk_pct:.1f} %")
-    with col3:
-        st.metric("Classe prédite", "Maladie cardiaque" if prediction == 1 else "Pas de maladie")
+        st.progress(min(risk_pct / 100, 1.0))
+        st.caption(f"Mode {mode_label}")
 
-    st.progress(min(risk_pct / 100, 1.0))
-    st.caption(f"Prédiction effectuée en mode **{mode_label}**.")
+        if mode == "rapide":
+            st.caption("Pour plus de précision, passez à l'onglet **Estimation complète** en haut de page.")
 
-    if mode == "rapide":
-        st.warning(
-            "Pour une estimation plus fine, utilisez l'onglet **Estimation complète** "
-            "dans la barre latérale."
+
+def render_metrics_chart(chart_df: pd.DataFrame) -> None:
+    """Graphique en barres au style clair, cohérent avec le thème cardiaque."""
+    df_long = chart_df.reset_index().melt(id_vars="Modèle", var_name="Métrique", value_name="Score")
+    chart = (
+        alt.Chart(df_long)
+        .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
+        .encode(
+            x=alt.X("Modèle:N", title=None, axis=alt.Axis(labelColor="#44403c")),
+            y=alt.Y("Score:Q", title="Score", scale=alt.Scale(domain=[0, 1])),
+            color=alt.Color(
+                "Métrique:N",
+                scale=alt.Scale(range=["#be123c", "#e11d48", "#fb7185", "#fda4af"]),
+                legend=alt.Legend(labelColor="#44403c", titleColor="#44403c"),
+            ),
+            xOffset="Métrique:N",
         )
+        .properties(height=320)
+        .configure_view(fill="#fff8f8", stroke="#fecdd3")
+        .configure_axis(gridColor="#fecdd3", domainColor="#fecdd3", labelColor="#44403c", titleColor="#57534e")
+        .configure_title(color="#1c1917")
+    )
+    st.altair_chart(chart, use_container_width=True)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -311,87 +713,106 @@ def load_evaluation_metrics(tracking_uri: str, experiment_name: str) -> dict[str
 
 
 # ---------------------------------------------------------------------------
-# Pages
+# Layout & pages
 # ---------------------------------------------------------------------------
+
+st.markdown('<div class="top-brand">🫀 CardioPredict</div>', unsafe_allow_html=True)
+
+with st.expander("⚙️ Configuration technique", expanded=False):
+    cfg1, cfg2, cfg3 = st.columns(3)
+    with cfg1:
+        api_url = st.text_input("URL de l'API", value=API_URL)
+    with cfg2:
+        mlflow_uri = st.text_input("MLflow tracking URI", value=MLFLOW_TRACKING_URI)
+    with cfg3:
+        mlflow_ui = st.text_input("MLflow UI", value=MLFLOW_UI_URL)
+
+if "nav_page" not in st.session_state:
+    st.session_state.nav_page = PAGE_KEYS[0]
+
+st.radio(
+    "Navigation",
+    options=PAGE_KEYS,
+    format_func=lambda k: f"{PAGE_ICONS[k]} {PAGE_LABELS[k]}",
+    horizontal=True,
+    label_visibility="collapsed",
+    key="nav_page",
+)
 
 page = st.session_state.nav_page
 
 if page == "accueil":
+    page_header(
+        "CardioPredict",
+        "Estimation du risque de maladie cardiaque à partir d'indicateurs de santé.",
+        icon="🫀",
+    )
+
     st.markdown(
-        """
-        <div class="hero">
-            <h1>🫀 Détection du risque cardiaque</h1>
-            <p>Outil pédagogique de classification binaire basé sur des données de santé publique.</p>
+        f'<span class="author-badge">👤 {AUTHOR_NAME} · {AUTHOR_CLASS} · 2026</span>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+        <div class="context-box">
+        <strong>Contexte du projet</strong><br><br>
+        Cette application a été réalisée dans le cadre du cours de <strong>{PROFESSOR_NAME}</strong>.
+        Elle illustre un pipeline MLOps complet : préparation des données, entraînement de modèles,
+        suivi via MLflow, API FastAPI et interface Streamlit.<br><br>
+        📂 <strong>Dépôt GitHub :</strong>
+        <a href="{GITHUB_REPO}" target="_blank">{GITHUB_REPO}</a><br>
+        📊 <strong>Jeu de données (Kaggle) :</strong>
+        <a href="{KAGGLE_DATASET}" target="_blank">Personal Key Indicators of Heart Disease (BRFSS 2020)</a>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.markdown("### Contexte du projet")
     st.markdown(
         """
-        Ce démonstrateur s'appuie sur le jeu de données **Heart Disease** (BRFSS 2020, CDC) :
-        des milliers d'individus décrits par leur profil de santé (âge, IMC, tabac, diabète,
-        activité physique, etc.) et une cible binaire indiquant la présence ou non d'une
-        maladie cardiaque.
-
-        Le pipeline ML comprend :
-        - **Préparation** des données et encodage des variables catégorielles
-        - **Entraînement** de modèles (Random Forest, XGBoost, LightGBM) avec suivi **MLflow**
-        - **API FastAPI** pour servir le meilleur modèle en production
-        - **Interface Streamlit** (cette application) pour tester des scénarios
+        Application pédagogique de **classification binaire** : un modèle estime la probabilité
+        de maladie cardiaque à partir du profil de santé d'un patient (âge, IMC, tabac, diabète,
+        activité physique, etc.).
         """
     )
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
+    st.markdown(
+        '<p class="cta-text">'
+        "<strong>Envie de voir la prédiction en action ?</strong> "
+        "Cliquez sur une carte ci-dessous pour accéder directement à la section concernée."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
+    render_feature_cards()
+
+    with st.expander("🔬 À propos du pipeline", expanded=False):
         st.markdown(
-            '<div class="info-card"><h3>⚡ Estimation rapide</h3>'
-            "<p>7 critères clés : âge, sexe, tabac, IMC, diabète, activité physique, "
-            "santé générale. Idéal pour un premier aperçu.</p></div>",
-            unsafe_allow_html=True,
-        )
-    with c2:
-        st.markdown(
-            '<div class="info-card"><h3>📋 Estimation complète</h3>'
-            "<p>Les 17 variables du modèle pour une prédiction plus personnalisée "
-            "et potentiellement plus précise.</p></div>",
-            unsafe_allow_html=True,
-        )
-    with c3:
-        st.markdown(
-            '<div class="info-card"><h3>📈 Métriques MLflow</h3>'
-            "<p>Consultez les performances des modèles entraînés : ROC-AUC, F1, "
-            "précision, rappel.</p></div>",
-            unsafe_allow_html=True,
+            """
+            - 🧹 Préparation et encodage des variables
+            - 🤖 Entraînement (Random Forest, XGBoost, LightGBM) avec MLflow
+            - 🚀 API FastAPI pour l'inférence en production
+            - 🖥️ Interface Streamlit pour tester des scénarios
+            """
         )
 
-    st.divider()
-    st.markdown("### Commencer une estimation")
-    b1, b2 = st.columns(2)
-    with b1:
-        if st.button("⚡ Lancer une estimation rapide", type="primary", use_container_width=True):
-            st.session_state.nav_page = "rapide"
-            st.rerun()
-    with b2:
-        if st.button("📋 Lancer une estimation complète", use_container_width=True):
-            st.session_state.nav_page = "complet"
-            st.rerun()
-
-    st.info(
-        "⚠️ **Avertissement** : cet outil est à visée pédagogique. "
-        "Il ne remplace en aucun cas un avis médical professionnel."
+    st.markdown(
+        '<p class="disclaimer">⚕️ Outil à visée pédagogique — ne remplace pas un avis médical professionnel.</p>',
+        unsafe_allow_html=True,
     )
 
 elif page == "rapide":
-    st.markdown(
-        """
-        <div class="hero">
-            <h1>⚡ Estimation rapide</h1>
-            <p>Renseignez les facteurs principaux — les autres critères seront estimés automatiquement.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    page_header(
+        "Estimation rapide",
+        "Les critères secondaires sont complétés par des valeurs typiques de la population.",
+        icon="⚡",
+    )
+
+    intro_text(
+        "Idéal pour commencer : répondez à quelques questions essentielles et obtenez "
+        "une première estimation en quelques secondes. Les critères non renseignés sont "
+        "complétés automatiquement avec des valeurs typiques."
     )
 
     bmi = render_bmi_section("rapide", default=27.3)
@@ -407,7 +828,7 @@ elif page == "rapide":
             physical_activity = st.selectbox("Activité physique régulière", ["Yes", "No"], format_func=fmt_yes_no)
             gen_health = st.selectbox("Santé générale perçue", GEN_HEALTH_OPTIONS, index=3, format_func=fmt_gen_health)
 
-        submitted = st.form_submit_button("Lancer la prédiction rapide", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Lancer la prédiction", type="primary", use_container_width=True)
 
     if submitted:
         payload = build_payload(
@@ -419,19 +840,21 @@ elif page == "rapide":
             PhysicalActivity=physical_activity,
             GenHealth=gen_health,
         )
-        result = call_predict(payload)
+        result = call_predict(api_url, payload)
         if result:
             display_result(result, "rapide")
 
 elif page == "complet":
-    st.markdown(
-        """
-        <div class="hero">
-            <h1>📋 Estimation complète</h1>
-            <p>Renseignez tous les critères pour affiner la prédiction.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    page_header(
+        "Estimation complète",
+        "Renseignez l'ensemble des critères pour affiner la prédiction.",
+        icon="📋",
+    )
+
+    intro_text(
+        "Pour une prédiction plus précise, renseignez l'ensemble des critères ci-dessous. "
+        "Chaque information compte : plus votre profil est détaillé, plus le résultat "
+        "reflète votre situation."
     )
 
     bmi = render_bmi_section("complet", default=27.3)
@@ -476,7 +899,7 @@ elif page == "complet":
         with c12:
             skin_cancer = st.selectbox("Cancer de la peau", ["Yes", "No"], format_func=fmt_yes_no)
 
-        submitted = st.form_submit_button("Lancer la prédiction complète", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Lancer la prédiction", type="primary", use_container_width=True)
 
     if submitted:
         payload = build_payload(
@@ -498,22 +921,24 @@ elif page == "complet":
             KidneyDisease=kidney,
             SkinCancer=skin_cancer,
         )
-        result = call_predict(payload)
+        result = call_predict(api_url, payload)
         if result:
             display_result(result, "complet")
 
 elif page == "metrics":
-    st.markdown(
-        """
-        <div class="hero">
-            <h1>📈 Métriques MLflow</h1>
-            <p>Performances des modèles entraînés et suivis dans l'expérience MLflow.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    page_header(
+        "Métriques MLflow",
+        "Performances des modèles entraînés.",
+        icon="📈",
     )
 
-    st.link_button("Ouvrir l'interface MLflow complète ↗", mlflow_ui)
+    intro_text(
+        "Ces indicateurs mesurent la qualité du modèle sur un jeu de test. "
+        "Plus une métrique est élevée (proche de 1), meilleure est la performance — "
+        "avec des nuances selon l'indicateur, détaillées ci-dessous."
+    )
+
+    st.link_button("📊 Ouvrir MLflow", mlflow_ui)
 
     try:
         models_df = load_mlflow_runs(mlflow_uri, MLFLOW_EXPERIMENT)
@@ -522,7 +947,7 @@ elif page == "metrics":
         st.error(f"Impossible de lire MLflow ({mlflow_uri}) : {exc}")
         st.info(
             "Lancez MLflow avec `make mlflow` ou `docker compose up -d mlflow`, "
-            "puis vérifiez l'URI dans la barre latérale."
+            "puis vérifiez l'URI dans la configuration technique."
         )
     else:
         if models_df.empty:
@@ -551,36 +976,60 @@ elif page == "metrics":
             chart_df = models_df.set_index("Modèle")[["ROC-AUC (test)", "F1", "Précision", "Rappel"]].dropna(how="all")
             if not chart_df.empty:
                 st.subheader("Visualisation")
-                st.bar_chart(chart_df)
+                render_metrics_chart(chart_df)
 
         if eval_metrics:
             st.subheader("Dernière évaluation (jeu de test)")
             m1, m2, m3, m4 = st.columns(4)
+            roc = float(eval_metrics.get("roc_auc", 0))
+            f1 = float(eval_metrics.get("f1_score", 0))
+            prec = float(eval_metrics.get("precision_score", 0))
+            rec = float(eval_metrics.get("recall_score", 0))
+
             with m1:
-                st.metric("ROC-AUC", f"{eval_metrics.get('roc_auc', 0):.3f}")
+                st.metric("ROC-AUC", f"{roc:.3f}")
             with m2:
-                st.metric("F1-score", f"{eval_metrics.get('f1_score', 0):.3f}")
+                st.metric("F1-score", f"{f1:.3f}")
             with m3:
-                st.metric("Précision", f"{eval_metrics.get('precision_score', 0):.3f}")
+                st.metric("Précision", f"{prec:.3f}")
             with m4:
-                st.metric("Rappel", f"{eval_metrics.get('recall_score', 0):.3f}")
+                st.metric("Rappel", f"{rec:.3f}")
 
             st.caption(
                 f"Échantillons évalués : {int(eval_metrics.get('example_count', 0)):,} · "
                 f"Exactitude : {eval_metrics.get('accuracy_score', 0):.1%}"
             )
+
+            st.subheader("Comprendre les résultats")
+            row1_c1, row1_c2 = st.columns(2)
+            with row1_c1:
+                with st.container(border=True):
+                    render_metric_explainer("roc_auc", roc)
+            with row1_c2:
+                with st.container(border=True):
+                    render_metric_explainer("f1_score", f1)
+
+            row2_c1, row2_c2 = st.columns(2)
+            with row2_c1:
+                with st.container(border=True):
+                    render_metric_explainer("precision_score", prec)
+            with row2_c2:
+                with st.container(border=True):
+                    render_metric_explainer("recall_score", rec)
+
+            with st.expander("📖 Glossaire rapide", expanded=False):
+                for info in METRIC_DEFINITIONS:
+                    st.markdown(f"**{info['label']}** — {info['definition']}")
+                    st.caption(str(info["interpretation"]))
+                    st.divider()
         else:
             st.info("Aucune évaluation `evaluate` terminée. Lancez `make evaluate` pour en générer une.")
 
 elif page == "history":
-    st.markdown(
-        """
-        <div class="hero">
-            <h1>📊 Historique</h1>
-            <p>Journal des prédictions effectuées via l'API.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    page_header(
+        "Historique",
+        "Journal des prédictions effectuées via l'API.",
+        icon="📊",
     )
 
     try:
