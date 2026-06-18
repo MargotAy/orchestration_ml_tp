@@ -387,6 +387,83 @@ st.markdown(
     [data-testid="stFormSubmitButton"] button p {
         color: #ffffff !important;
     }
+    /* Thème clair forcé (sans .streamlit/config.toml) */
+    .stApp { color-scheme: light; }
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    section.main {
+        background: transparent !important;
+        color: #1c1917 !important;
+    }
+    /* Onglets navigation */
+    div[data-testid="stRadio"] [role="radiogroup"] > label {
+        background-color: transparent !important;
+    }
+    div[data-testid="stRadio"] label:has(input:checked) {
+        background-color: #fff1f2 !important;
+        border-color: rgba(244, 63, 94, 0.22) !important;
+    }
+    div[data-testid="stRadio"] label span,
+    div[data-testid="stRadio"] label p,
+    div[data-testid="stRadio"] label [data-testid="stMarkdownContainer"] p {
+        color: #57534e !important;
+    }
+    div[data-testid="stRadio"] label:has(input:checked) span,
+    div[data-testid="stRadio"] label:has(input:checked) p,
+    div[data-testid="stRadio"] label:has(input:checked) [data-testid="stMarkdownContainer"] p {
+        color: #be123c !important;
+    }
+    /* Boutons secondaires (cartes accueil, etc.) */
+    [data-testid="stBaseButton-secondary"] button,
+    .stButton > button[kind="secondary"] {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        color: #44403c !important;
+        border: 1px solid rgba(244, 63, 94, 0.28) !important;
+    }
+    [data-testid="stBaseButton-secondary"] button:hover,
+    .stButton > button[kind="secondary"]:hover {
+        background-color: #fff1f2 !important;
+        color: #1c1917 !important;
+        border-color: #e11d48 !important;
+    }
+    [data-testid="stBaseButton-secondary"] button p,
+    [data-testid="stBaseButton-secondary"] button span {
+        color: inherit !important;
+    }
+    /* Boutons lien */
+    [data-testid="stLinkButton"] a {
+        background-color: #ffffff !important;
+        color: #be123c !important;
+        border: 1px solid rgba(244, 63, 94, 0.35) !important;
+    }
+    [data-testid="stLinkButton"] a:hover {
+        background-color: #fff1f2 !important;
+        border-color: #e11d48 !important;
+    }
+    /* Tableaux (métriques MLflow) */
+    [data-testid="stDataFrame"],
+    [data-testid="stDataFrame"] > div,
+    [data-testid="stDataFrame"] [data-testid="glideDataEditor"],
+    div[data-testid="glideDataEditor"] {
+        background-color: #ffffff !important;
+        color: #1c1917 !important;
+    }
+    [data-testid="stDataFrame"] table,
+    [data-testid="stDataFrame"] thead,
+    [data-testid="stDataFrame"] tbody,
+    [data-testid="stDataFrame"] tr,
+    [data-testid="stDataFrame"] th,
+    [data-testid="stDataFrame"] td {
+        background-color: #ffffff !important;
+        color: #1c1917 !important;
+    }
+    [data-testid="stDataFrame"] th {
+        background-color: #fff1f2 !important;
+        font-weight: 600;
+    }
+    [data-testid="stDataFrame"] tr:hover td {
+        background-color: #fff8f8 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -761,62 +838,16 @@ def load_evaluation_metrics(tracking_uri: str, experiment_name: str) -> dict[str
 
 st.markdown('<div class="top-brand">🫀 CardioPredict</div>', unsafe_allow_html=True)
 
+api_url = API_URL
+mlflow_uri = mlflow_tracking_uri()
+mlflow_ui = mlflow_ui_url()
+
 with st.expander("⚙️ Configuration technique", expanded=False):
-    tracking_uri = mlflow_tracking_uri()
-    ui_url = mlflow_ui_url()
-    api_docs = public_api_docs_url()
-    host = public_host()
-
-    st.markdown(
-        """
-        **MLflow Tracking URI** — adresse utilisée par le *code Python* (client MLflow) pour
-        lire et écrire les runs. Dans Docker, c'est une URL **interne** entre conteneurs
-        (`http://mlflow:5000`), invisible depuis votre navigateur.
-
-        **MLflow UI** — l'URL **publique** que vous ouvrez dans le navigateur pour voir
-        les expériences, graphiques et métriques (`http://VOTRE_IP:5000`).
-        """
-    )
-
-    if is_docker_stack():
-        st.markdown("**Liens publics** (à ouvrir dans votre navigateur)")
-        link1, link2 = st.columns(2)
-        with link1:
-            st.link_button("📄 API — documentation", api_docs)
-        with link2:
-            st.link_button("📊 MLflow UI", ui_url)
-        st.caption(
-            f"Connexions internes Docker (code uniquement) : API `{API_URL}` · "
-            f"MLflow tracking `{tracking_uri}`"
-        )
-        if host in ("127.0.0.1", "localhost"):
-            st.warning(
-                "Les liens publics pointent vers localhost. Modifiez `PUBLIC_HOST` dans "
-                "`src/config.py` puis redémarrez le frontend "
-                "(`docker compose --profile frontend up -d --build frontend`)."
-            )
-        api_url = API_URL
-        mlflow_uri = tracking_uri
-        mlflow_ui = ui_url
-    else:
-        st.markdown("**Mode local** — modifiez les URLs si nécessaire")
-        cfg1, cfg2, cfg3 = st.columns(3)
-        with cfg1:
-            api_url = st.text_input("URL de l'API (interne)", value=API_URL)
-        with cfg2:
-            mlflow_uri = st.text_input(
-                "MLflow tracking URI (code Python)",
-                value=tracking_uri,
-                help="Ex. sqlite:///… en local, ou http://127.0.0.1:5000 si serveur MLflow lancé.",
-            )
-        with cfg3:
-            mlflow_ui = st.text_input(
-                "MLflow UI (navigateur)",
-                value=ui_url,
-                help="URL web à ouvrir pour l'interface graphique MLflow.",
-            )
-        st.link_button("📄 Ouvrir l'API", f"{api_url.rstrip('/')}/docs")
-        st.link_button("📊 Ouvrir MLflow UI", mlflow_ui)
+    link1, link2 = st.columns(2)
+    with link1:
+        st.link_button("📄 API — documentation", public_api_docs_url())
+    with link2:
+        st.link_button("📊 MLflow UI", mlflow_ui)
 
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = PAGE_KEYS[0]
@@ -1051,21 +1082,13 @@ elif page == "metrics":
             )
         else:
             st.subheader("Comparaison des modèles")
-            display_df = models_df.drop(columns=["Run"], errors="ignore")
-            st.dataframe(
-                display_df.style.format(
-                    {
-                        "ROC-AUC (test)": "{:.3f}",
-                        "ROC-AUC (CV)": "{:.3f}",
-                        "F1": "{:.3f}",
-                        "Précision": "{:.3f}",
-                        "Rappel": "{:.3f}",
-                    },
-                    na_rep="—",
-                ),
-                use_container_width=True,
-                hide_index=True,
-            )
+            display_df = models_df.drop(columns=["Run"], errors="ignore").copy()
+            for col in ("ROC-AUC (test)", "ROC-AUC (CV)", "F1", "Précision", "Rappel"):
+                if col in display_df.columns:
+                    display_df[col] = display_df[col].apply(
+                        lambda x: f"{x:.3f}" if pd.notna(x) else "—"
+                    )
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
 
             chart_df = models_df.set_index("Modèle")[["ROC-AUC (test)", "F1", "Précision", "Rappel"]].dropna(how="all")
             if not chart_df.empty:
