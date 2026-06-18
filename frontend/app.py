@@ -133,6 +133,16 @@ st.markdown(
         --border: rgba(244, 63, 94, 0.32);
         --surface: rgba(255, 255, 255, 0.82);
     }
+    /* Thème clair forcé (conteneurs, métriques, formulaires) */
+    .stApp,
+    .stApp[data-theme="dark"],
+    .stApp[data-theme="light"] {
+        color-scheme: light;
+        --background-color: #ffffff;
+        --secondary-background-color: #fff8f8;
+        --text-color: #1c1917;
+        --primary-color: #be123c;
+    }
     .stApp {
         background: linear-gradient(
             165deg,
@@ -352,15 +362,52 @@ st.markdown(
         color: #78716c !important;
     }
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.9) !important;
+        background: #ffffff !important;
         border-color: rgba(244, 63, 94, 0.25) !important;
     }
+    [data-testid="stVerticalBlockBorderWrapper"] * {
+        color: inherit;
+    }
+    [data-testid="stMetric"] {
+        background: #ffffff !important;
+        border: 1px solid rgba(244, 63, 94, 0.18);
+        border-radius: 10px;
+        padding: 0.65rem 0.85rem;
+    }
+    [data-testid="stForm"] {
+        background: #ffffff !important;
+        border: 1px solid rgba(244, 63, 94, 0.2) !important;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+    }
     [data-testid="stExpander"] {
-        background: rgba(255, 255, 255, 0.85);
+        background: #ffffff !important;
         border: 1px solid var(--border);
         border-radius: 10px;
     }
+    [data-testid="stExpanderDetails"] {
+        background: #ffffff !important;
+        border-top: 1px solid rgba(244, 63, 94, 0.15);
+    }
     [data-testid="stExpander"] summary span {
+        color: #44403c !important;
+    }
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="base-input"] {
+        background-color: #ffffff !important;
+        color: #1c1917 !important;
+        border-color: rgba(244, 63, 94, 0.25) !important;
+    }
+    [data-testid="stNumberInput"] input {
+        background-color: #ffffff !important;
+        color: #1c1917 !important;
+    }
+    [data-testid="stAlert"] {
+        background-color: #fff8f8 !important;
+        color: #1c1917 !important;
+    }
+    [data-testid="stAlert"] * {
         color: #44403c !important;
     }
     .stCaption, .stCaption p, small {
@@ -387,21 +434,22 @@ st.markdown(
     [data-testid="stFormSubmitButton"] button p {
         color: #ffffff !important;
     }
-    /* Thème clair forcé (sans .streamlit/config.toml) */
-    .stApp { color-scheme: light; }
+    /* Thème clair forcé (complément CSS) */
     [data-testid="stAppViewContainer"],
     [data-testid="stMain"],
     section.main {
         background: transparent !important;
         color: #1c1917 !important;
     }
-    /* Onglets navigation */
-    div[data-testid="stRadio"] [role="radiogroup"] > label {
+    /* Onglets navigation — cibler les couches internes BaseWeb */
+    div[data-testid="stRadio"] [role="radiogroup"] > label,
+    div[data-testid="stRadio"] [role="radiogroup"] > label > div,
+    div[data-testid="stRadio"] [data-baseweb="radio"] {
         background-color: transparent !important;
     }
-    div[data-testid="stRadio"] label:has(input:checked) {
+    div[data-testid="stRadio"] label:has(input:checked),
+    div[data-testid="stRadio"] label:has(input:checked) > div {
         background-color: #fff1f2 !important;
-        border-color: rgba(244, 63, 94, 0.22) !important;
     }
     div[data-testid="stRadio"] label span,
     div[data-testid="stRadio"] label p,
@@ -416,7 +464,7 @@ st.markdown(
     /* Boutons secondaires (cartes accueil, etc.) */
     [data-testid="stBaseButton-secondary"] button,
     .stButton > button[kind="secondary"] {
-        background-color: rgba(255, 255, 255, 0.95) !important;
+        background-color: #ffffff !important;
         color: #44403c !important;
         border: 1px solid rgba(244, 63, 94, 0.28) !important;
     }
@@ -463,6 +511,58 @@ st.markdown(
     }
     [data-testid="stDataFrame"] tr:hover td {
         background-color: #fff8f8 !important;
+    }
+    /* Override thème sombre système / navigateur */
+    .stApp[data-theme="dark"] {
+        --background-color: #ffffff !important;
+        --secondary-background-color: #fff8f8 !important;
+        --text-color: #1c1917 !important;
+        --primary-color: #be123c !important;
+    }
+    /* Expanders (config technique, glossaire, pipeline…) */
+    [data-testid="stExpander"] details {
+        background-color: #ffffff !important;
+        border: 1px solid rgba(244, 63, 94, 0.22);
+        border-radius: 10px;
+    }
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] summary p {
+        background-color: #ffffff !important;
+        color: #44403c !important;
+    }
+    [data-testid="stExpander"] details[open] > summary {
+        background-color: #fff8f8 !important;
+        border-bottom: 1px solid rgba(244, 63, 94, 0.12);
+    }
+    [data-testid="stExpanderDetails"],
+    [data-testid="stExpanderDetails"] > div {
+        background-color: #ffffff !important;
+        color: #44403c !important;
+    }
+    /* Onglets navigation — fond clair sur toute la pile */
+    div[data-testid="stRadio"] [role="radiogroup"] {
+        background-color: transparent !important;
+    }
+    div[data-testid="stRadio"] label,
+    div[data-testid="stRadio"] label > div,
+    div[data-testid="stRadio"] label [data-testid="stMarkdownContainer"],
+    div[data-testid="stRadio"] label [data-testid="stMarkdownContainer"] p {
+        background-color: transparent !important;
+        color: #57534e !important;
+    }
+    div[data-testid="stRadio"] label:has(input:checked),
+    div[data-testid="stRadio"] label:has(input:checked) > div,
+    div[data-testid="stRadio"] label:has(input:checked) [data-testid="stMarkdownContainer"] {
+        background-color: #fff1f2 !important;
+    }
+    /* Graphiques Altair */
+    [data-testid="stVegaLiteChart"],
+    [data-testid="stVegaLiteChart"] > div,
+    [data-testid="stArrowVegaLiteChart"],
+    [data-testid="stArrowVegaLiteChart"] > div,
+    [data-testid="stFullScreenFrame"] {
+        background-color: #ffffff !important;
     }
     </style>
     """,
@@ -767,11 +867,13 @@ def render_metrics_chart(chart_df: pd.DataFrame) -> None:
             xOffset="Métrique:N",
         )
         .properties(height=320)
-        .configure_view(fill="#fff8f8", stroke="#fecdd3")
+        .configure(background="#ffffff")
+        .configure_view(fill="#ffffff", stroke="#fecdd3")
         .configure_axis(gridColor="#fecdd3", domainColor="#fecdd3", labelColor="#44403c", titleColor="#57534e")
         .configure_title(color="#1c1917")
+        .configure_legend(labelColor="#44403c", titleColor="#44403c")
     )
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, use_container_width=True, theme=None)
 
 
 @st.cache_data(ttl=60, show_spinner=False)
