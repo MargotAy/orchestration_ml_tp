@@ -48,7 +48,7 @@ from src.config import (
 from src.data import load_data, split
 from src.evaluation import log_shap_summary
 from src.features import build_preprocessor
-from src.tracking import log_dataset, setup_experiment
+from src.tracking import SKOPS_TRUSTED_TYPES, log_dataset, setup_experiment
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -209,6 +209,7 @@ def log_run_to_mlflow(
             signature=signature,
             input_example=x_test.iloc[:5],
             registered_model_name=register_as,
+            skops_trusted_types=SKOPS_TRUSTED_TYPES,
         )
         if register_as and model_info.registered_model_version:
             describe_registered_version(

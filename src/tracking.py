@@ -12,6 +12,22 @@ from src.config import DATA_PATH, MLFLOW_EXPERIMENT, MLFLOW_TRACKING_URI, TARGET
 
 logger = logging.getLogger(__name__)
 
+# Types autorises pour la serialisation skops (MLflow 3+) des pipelines sklearn + XGB/LGBM.
+SKOPS_TRUSTED_TYPES = [
+    "numpy.dtype",
+    "numpy.ndarray",
+    "xgboost.core.Booster",
+    "xgboost.sklearn.XGBClassifier",
+    "lightgbm.basic.Booster",
+    "lightgbm.sklearn.LGBMClassifier",
+    "sklearn.pipeline.Pipeline",
+    "sklearn.compose._column_transformer.ColumnTransformer",
+    "sklearn.ensemble._forest.RandomForestClassifier",
+    "sklearn.preprocessing._encoders.OneHotEncoder",
+    "sklearn.impute._base.SimpleImputer",
+    "sklearn.preprocessing._data.StandardScaler",
+]
+
 
 def setup_experiment() -> None:
     """Configure MLflow tracking URI and experiment metadata."""
