@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Types autorises pour la serialisation skops (MLflow 3+) des pipelines sklearn + XGB/LGBM.
 SKOPS_TRUSTED_TYPES = [
+    "collections.OrderedDict",
     "numpy.dtype",
     "numpy.ndarray",
     "xgboost.core.Booster",
@@ -26,6 +27,7 @@ SKOPS_TRUSTED_TYPES = [
     "sklearn.preprocessing._encoders.OneHotEncoder",
     "sklearn.impute._base.SimpleImputer",
     "sklearn.preprocessing._data.StandardScaler",
+    "sklearn.utils._bunch.Bunch",
 ]
 
 

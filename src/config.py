@@ -13,6 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
+# Optionnel : surcharge locale via .env (non versionne), sans fichier obligatoire.
 load_dotenv(ROOT / ".env")
 
 # TODO (S0-1) : chemin vers votre fichier de donnees (CSV) place dans data/
@@ -45,6 +46,9 @@ CATEGORICAL_FEATURES: list[str] = [
 
 RANDOM_STATE = 42
 
+# IP publique du deploiement (liens navigateur dans le frontend Streamlit).
+# Mettre "127.0.0.1" pour le dev local, l'IP du VPS en production.
+PUBLIC_HOST = "141.253.116.99"
 
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 MLFLOW_EXPERIMENT = "heart-disease-classification"

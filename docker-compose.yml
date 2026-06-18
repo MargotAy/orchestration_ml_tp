@@ -90,9 +90,6 @@ services:
     environment:
       API_URL: http://api:8000
       MLFLOW_TRACKING_URI: http://mlflow:5000
-      PUBLIC_HOST: ${PUBLIC_HOST:-127.0.0.1}
-      MLFLOW_UI_URL: ${MLFLOW_UI_URL:-}
-      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
     depends_on:
       mlflow:
         condition: service_started

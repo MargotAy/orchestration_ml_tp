@@ -15,40 +15,54 @@ import streamlit as st
 import altair as alt
 from mlflow.tracking import MlflowClient
 
+from src.config import MLFLOW_EXPERIMENT, MLFLOW_TRACKING_URI as CONFIG_MLFLOW_URI, PUBLIC_HOST
+
 ROOT = Path(__file__).resolve().parents[1]
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 
 
-def _default_mlflow_tracking_uri() -> str:
-    if uri := os.environ.get("MLFLOW_TRACKING_URI"):
-        return uri
-    # Frontend dans docker compose : lire le serveur MLflow du réseau interne
-    if os.environ.get("API_URL", "").rstrip("/") == "http://api:8000":
-        return "http://mlflow:5000"
-    return f"sqlite:///{ROOT / 'mlflow.db'}"
+def _request_host() -> str | None:
+    """Hostname depuis l'en-tête HTTP Host (adresse utilisée dans le navigateur)."""
+    try:
+        headers = getattr(st.context, "headers", None)
+        if not headers:
+            return None
+        host_header = headers.get("Host") or headers.get("host")
+        if not host_header:
+            return None
+        hostname = host_header.split(":")[0].strip()
+        if hostname in ("127.0.0.1", "localhost", "0.0.0.0"):
+            return None
+        return hostname
+    except Exception:
+        return None
 
 
-def _default_mlflow_ui_url() -> str:
-    if url := os.environ.get("MLFLOW_UI_URL"):
-        return url
-    host = os.environ.get("PUBLIC_HOST", "127.0.0.1")
-    return f"http://{host}:5000"
+def public_host() -> str:
+    if detected := _request_host():
+        return detected
+    return os.environ.get("PUBLIC_HOST", PUBLIC_HOST).strip() or PUBLIC_HOST
 
 
-def _public_api_docs_url() -> str:
-    if url := os.environ.get("PUBLIC_API_URL"):
-        return f"{url.rstrip('/')}/docs"
-    host = os.environ.get("PUBLIC_HOST", "127.0.0.1")
-    return f"http://{host}:8000/docs"
+def mlflow_tracking_uri() -> str:
+    """Adresse API MLflow pour le code Python (lecture/écriture des runs)."""
+    if is_docker_stack():
+        return os.environ.get("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    return os.environ.get("MLFLOW_TRACKING_URI", CONFIG_MLFLOW_URI)
+
+
+def mlflow_ui_url() -> str:
+    """URL web MLflow à ouvrir dans le navigateur (interface graphique)."""
+    return f"http://{public_host()}:5000"
+
+
+def public_api_docs_url() -> str:
+    return f"http://{public_host()}:8000/docs"
 
 
 def is_docker_stack() -> bool:
     return os.environ.get("API_URL", "").rstrip("/") == "http://api:8000"
 
-
-MLFLOW_TRACKING_URI = _default_mlflow_tracking_uri()
-MLFLOW_EXPERIMENT = os.environ.get("MLFLOW_EXPERIMENT", "heart-disease-classification")
-MLFLOW_UI_URL = _default_mlflow_ui_url()
 
 DEFAULT_VALUES: dict[str, float | str] = {
     "BMI": 27.34,
@@ -748,35 +762,61 @@ def load_evaluation_metrics(tracking_uri: str, experiment_name: str) -> dict[str
 st.markdown('<div class="top-brand">🫀 CardioPredict</div>', unsafe_allow_html=True)
 
 with st.expander("⚙️ Configuration technique", expanded=False):
+    tracking_uri = mlflow_tracking_uri()
+    ui_url = mlflow_ui_url()
+    api_docs = public_api_docs_url()
+    host = public_host()
+
+    st.markdown(
+        """
+        **MLflow Tracking URI** — adresse utilisée par le *code Python* (client MLflow) pour
+        lire et écrire les runs. Dans Docker, c'est une URL **interne** entre conteneurs
+        (`http://mlflow:5000`), invisible depuis votre navigateur.
+
+        **MLflow UI** — l'URL **publique** que vous ouvrez dans le navigateur pour voir
+        les expériences, graphiques et métriques (`http://VOTRE_IP:5000`).
+        """
+    )
+
     if is_docker_stack():
         st.markdown("**Liens publics** (à ouvrir dans votre navigateur)")
         link1, link2 = st.columns(2)
         with link1:
-            st.link_button("📄 API — documentation", _public_api_docs_url())
+            st.link_button("📄 API — documentation", api_docs)
         with link2:
-            st.link_button("📊 MLflow UI", MLFLOW_UI_URL)
+            st.link_button("📊 MLflow UI", ui_url)
         st.caption(
-            "Connexions internes Docker (utilisées automatiquement par l'application) : "
-            "API `http://api:8000` · MLflow `http://mlflow:5000`"
+            f"Connexions internes Docker (code uniquement) : API `{API_URL}` · "
+            f"MLflow tracking `{tracking_uri}`"
         )
-        if os.environ.get("PUBLIC_HOST", "127.0.0.1") == "127.0.0.1":
+        if host in ("127.0.0.1", "localhost"):
             st.warning(
-                "Définissez `PUBLIC_HOST=141.253.116.99` dans le fichier `.env` du VPS "
-                "puis redémarrez le frontend pour des liens publics corrects."
+                "Les liens publics pointent vers localhost. Modifiez `PUBLIC_HOST` dans "
+                "`src/config.py` puis redémarrez le frontend "
+                "(`docker compose --profile frontend up -d --build frontend`)."
             )
         api_url = API_URL
-        mlflow_uri = MLFLOW_TRACKING_URI
-        mlflow_ui = MLFLOW_UI_URL
+        mlflow_uri = tracking_uri
+        mlflow_ui = ui_url
     else:
         st.markdown("**Mode local** — modifiez les URLs si nécessaire")
         cfg1, cfg2, cfg3 = st.columns(3)
         with cfg1:
             api_url = st.text_input("URL de l'API (interne)", value=API_URL)
         with cfg2:
-            mlflow_uri = st.text_input("MLflow tracking URI", value=MLFLOW_TRACKING_URI)
+            mlflow_uri = st.text_input(
+                "MLflow tracking URI (code Python)",
+                value=tracking_uri,
+                help="Ex. sqlite:///… en local, ou http://127.0.0.1:5000 si serveur MLflow lancé.",
+            )
         with cfg3:
-            mlflow_ui = st.text_input("MLflow UI (navigateur)", value=MLFLOW_UI_URL)
+            mlflow_ui = st.text_input(
+                "MLflow UI (navigateur)",
+                value=ui_url,
+                help="URL web à ouvrir pour l'interface graphique MLflow.",
+            )
         st.link_button("📄 Ouvrir l'API", f"{api_url.rstrip('/')}/docs")
+        st.link_button("📊 Ouvrir MLflow UI", mlflow_ui)
 
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = PAGE_KEYS[0]
@@ -998,8 +1038,8 @@ elif page == "metrics":
         st.error(f"Impossible de lire MLflow ({mlflow_uri}) : {exc}")
         st.info(
             "Vérifiez que MLflow tourne (`docker compose up -d mlflow`). "
-            "Sur le VPS, l'URI interne doit être `http://mlflow:5000` et le lien UI "
-            "`http://VOTRE_IP:5000` (voir fichier `.env` / configuration technique)."
+            "Sur le VPS, `PUBLIC_HOST` dans `src/config.py` doit être l'IP publique "
+            "(ex. `141.253.116.99`)."
         )
     else:
         if models_df.empty:
