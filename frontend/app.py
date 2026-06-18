@@ -17,9 +17,38 @@ from mlflow.tracking import MlflowClient
 
 ROOT = Path(__file__).resolve().parents[1]
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", f"sqlite:///{ROOT / 'mlflow.db'}")
+
+
+def _default_mlflow_tracking_uri() -> str:
+    if uri := os.environ.get("MLFLOW_TRACKING_URI"):
+        return uri
+    # Frontend dans docker compose : lire le serveur MLflow du réseau interne
+    if os.environ.get("API_URL", "").rstrip("/") == "http://api:8000":
+        return "http://mlflow:5000"
+    return f"sqlite:///{ROOT / 'mlflow.db'}"
+
+
+def _default_mlflow_ui_url() -> str:
+    if url := os.environ.get("MLFLOW_UI_URL"):
+        return url
+    host = os.environ.get("PUBLIC_HOST", "127.0.0.1")
+    return f"http://{host}:5000"
+
+
+def _public_api_docs_url() -> str:
+    if url := os.environ.get("PUBLIC_API_URL"):
+        return f"{url.rstrip('/')}/docs"
+    host = os.environ.get("PUBLIC_HOST", "127.0.0.1")
+    return f"http://{host}:8000/docs"
+
+
+def is_docker_stack() -> bool:
+    return os.environ.get("API_URL", "").rstrip("/") == "http://api:8000"
+
+
+MLFLOW_TRACKING_URI = _default_mlflow_tracking_uri()
 MLFLOW_EXPERIMENT = os.environ.get("MLFLOW_EXPERIMENT", "heart-disease-classification")
-MLFLOW_UI_URL = os.environ.get("MLFLOW_UI_URL", "http://127.0.0.1:5000")
+MLFLOW_UI_URL = _default_mlflow_ui_url()
 
 DEFAULT_VALUES: dict[str, float | str] = {
     "BMI": 27.34,
@@ -719,13 +748,35 @@ def load_evaluation_metrics(tracking_uri: str, experiment_name: str) -> dict[str
 st.markdown('<div class="top-brand">🫀 CardioPredict</div>', unsafe_allow_html=True)
 
 with st.expander("⚙️ Configuration technique", expanded=False):
-    cfg1, cfg2, cfg3 = st.columns(3)
-    with cfg1:
-        api_url = st.text_input("URL de l'API", value=API_URL)
-    with cfg2:
-        mlflow_uri = st.text_input("MLflow tracking URI", value=MLFLOW_TRACKING_URI)
-    with cfg3:
-        mlflow_ui = st.text_input("MLflow UI", value=MLFLOW_UI_URL)
+    if is_docker_stack():
+        st.markdown("**Liens publics** (à ouvrir dans votre navigateur)")
+        link1, link2 = st.columns(2)
+        with link1:
+            st.link_button("📄 API — documentation", _public_api_docs_url())
+        with link2:
+            st.link_button("📊 MLflow UI", MLFLOW_UI_URL)
+        st.caption(
+            "Connexions internes Docker (utilisées automatiquement par l'application) : "
+            "API `http://api:8000` · MLflow `http://mlflow:5000`"
+        )
+        if os.environ.get("PUBLIC_HOST", "127.0.0.1") == "127.0.0.1":
+            st.warning(
+                "Définissez `PUBLIC_HOST=141.253.116.99` dans le fichier `.env` du VPS "
+                "puis redémarrez le frontend pour des liens publics corrects."
+            )
+        api_url = API_URL
+        mlflow_uri = MLFLOW_TRACKING_URI
+        mlflow_ui = MLFLOW_UI_URL
+    else:
+        st.markdown("**Mode local** — modifiez les URLs si nécessaire")
+        cfg1, cfg2, cfg3 = st.columns(3)
+        with cfg1:
+            api_url = st.text_input("URL de l'API (interne)", value=API_URL)
+        with cfg2:
+            mlflow_uri = st.text_input("MLflow tracking URI", value=MLFLOW_TRACKING_URI)
+        with cfg3:
+            mlflow_ui = st.text_input("MLflow UI (navigateur)", value=MLFLOW_UI_URL)
+        st.link_button("📄 Ouvrir l'API", f"{api_url.rstrip('/')}/docs")
 
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = PAGE_KEYS[0]
@@ -946,14 +997,17 @@ elif page == "metrics":
     except Exception as exc:
         st.error(f"Impossible de lire MLflow ({mlflow_uri}) : {exc}")
         st.info(
-            "Lancez MLflow avec `make mlflow` ou `docker compose up -d mlflow`, "
-            "puis vérifiez l'URI dans la configuration technique."
+            "Vérifiez que MLflow tourne (`docker compose up -d mlflow`). "
+            "Sur le VPS, l'URI interne doit être `http://mlflow:5000` et le lien UI "
+            "`http://VOTRE_IP:5000` (voir fichier `.env` / configuration technique)."
         )
     else:
         if models_df.empty:
             st.warning(
                 f"Aucun run trouvé dans l'expérience **{MLFLOW_EXPERIMENT}**. "
-                "Entraînez des modèles avec `make train-models` ou `make train-optuna`."
+                "Sur le VPS, l'entraînement docker (`train`) ne loggue pas les métriques comparatives. "
+                "Lancez `make train-models` en local (avec MLflow) ou entraînez depuis une machine "
+                "connectée au même serveur MLflow."
             )
         else:
             st.subheader("Comparaison des modèles")

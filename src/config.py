@@ -7,6 +7,7 @@ colonnes via ces constantes. Voir tp/TP_S0_projet_personnel.md.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -45,7 +46,7 @@ CATEGORICAL_FEATURES: list[str] = [
 RANDOM_STATE = 42
 
 
-MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 MLFLOW_EXPERIMENT = "heart-disease-classification"
 MODEL_NAME = "heart-disease-model"
 

@@ -26,14 +26,40 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.train
-    # Entraine et ecrit models/model.joblib dans le volume partage models_data.
+    # Entraine la baseline -> models/model.joblib (sans metriques MLflow comparatives).
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
     depends_on:
       - mlflow
     volumes:
       - models_data:/app/models
-    # Le profil "train" evite que ce service one-shot demarre avec `up`.
+    profiles:
+      - train
+
+  train-models:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.train
+    # Compare RF / XGBoost / LightGBM et loggue les metriques dans MLflow.
+    command: ["python", "-m", "src.train_models", "--cv", "3"]
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    depends_on:
+      - mlflow
+    volumes:
+      - models_data:/app/models
+    profiles:
+      - train
+
+  evaluate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.train
+    command: ["python", "-m", "src.evaluate", "--no-validate"]
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    depends_on:
+      - mlflow
     profiles:
       - train
 
@@ -63,7 +89,13 @@ services:
       dockerfile: docker/Dockerfile.frontend
     environment:
       API_URL: http://api:8000
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      PUBLIC_HOST: ${PUBLIC_HOST:-127.0.0.1}
+      MLFLOW_UI_URL: ${MLFLOW_UI_URL:-}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
     depends_on:
+      mlflow:
+        condition: service_started
       api:
         condition: service_healthy
     ports:

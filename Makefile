@@ -136,8 +136,14 @@ frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
 docker-build: ## Construit les images train et api
 	docker compose build train api
 
-docker-run: ## Lance l'entrainement one-shot (profil train)
+docker-run: ## Lance l'entrainement baseline one-shot (profil train)
 	docker compose --profile train run --rm train
+
+docker-train-models: ## Entraine RF/XGB/LGBM + log MLflow (profil train, ~15-30 min)
+	docker compose --profile train run --rm train-models
+
+docker-evaluate: ## Evalue le modele registry + log MLflow (profil train)
+	docker compose --profile train run --rm evaluate
 
 docker-up: ## Demarre la stack (mlflow, api)
 	docker compose up -d --build mlflow api
