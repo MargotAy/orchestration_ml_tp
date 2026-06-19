@@ -110,8 +110,12 @@ def predict(features: Features) -> PredictionOut:
     model = ml.get("model")
     if model is None:
         raise HTTPException(status_code=503, detail="Modele non charge")
-    row = pd.DataFrame([features.model_dump()])
-    proba = float(model.predict_proba(row)[0, 1])  # type: ignore[attr-defined]
+    try:
+        row = pd.DataFrame([features.model_dump()])
+        proba = float(model.predict_proba(row)[0, 1])  # type: ignore[attr-defined]
+    except Exception as exc:
+        logger.exception("Erreur lors de la prediction")
+        raise HTTPException(status_code=500, detail=f"Prediction impossible : {exc}") from exc
     result = PredictionOut(prediction=int(proba >= 0.5), probability=round(proba, 4))
     prediction_log.appendleft(
         {

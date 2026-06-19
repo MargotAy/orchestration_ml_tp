@@ -197,81 +197,93 @@ st.markdown(
     }
     .context-box a { color: var(--accent-dark); text-decoration: none; font-weight: 500; }
     .context-box a:hover { text-decoration: underline; }
-    /* Onglets navigation — pastille radio custom */
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) > div[role="radiogroup"] {
-        gap: 0.35rem;
+    /* Onglets navigation */
+    .nav-tabs {
         border-bottom: 1px solid var(--border);
         padding-bottom: 0.65rem;
         margin-bottom: 1.25rem;
-        background: transparent !important;
     }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label {
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
+    .nav-tabs [data-testid="stHorizontalBlock"] {
+        gap: 0.35rem;
+    }
+    .nav-tabs [data-testid="stButton"] button {
         background: transparent !important;
-        padding: 0.55rem 1rem !important;
-        border-radius: 8px !important;
         border: 1px solid transparent !important;
         color: #57534e !important;
         font-weight: 500;
-        cursor: pointer !important;
+        border-radius: 8px !important;
+        padding: 0.55rem 0.75rem !important;
+        box-shadow: none !important;
+        white-space: nowrap;
     }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label::before {
-        content: "" !important;
-        display: inline-block !important;
-        width: 15px !important;
-        height: 15px !important;
-        min-width: 15px !important;
-        min-height: 15px !important;
-        border: 2px solid var(--accent-dark) !important;
-        border-radius: 50% !important;
-        background-color: #ffffff !important;
-        box-sizing: border-box !important;
-        flex-shrink: 0 !important;
+    .nav-tabs [data-testid="stButton"] button:hover {
+        background: var(--accent-soft) !important;
+        border-color: rgba(244, 63, 94, 0.18) !important;
+        color: var(--accent-dark) !important;
     }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked) {
+    .nav-tabs [data-testid="stButton"] button[kind="primary"],
+    .nav-tabs [data-testid="stButton"] button:disabled {
         background: var(--accent-soft) !important;
         border-color: rgba(244, 63, 94, 0.22) !important;
-    }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked)::before {
-        background-color: var(--accent-dark) !important;
-        border-color: var(--accent-dark) !important;
-    }
-    /* Masquer le radio Streamlit natif — une seule pastille (::before) */
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [data-baseweb="radio"],
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [data-baseweb="radio"] * {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        overflow: hidden !important;
-        position: absolute !important;
-        clip: rect(0, 0, 0, 0) !important;
-    }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) input[type="radio"] {
-        position: absolute !important;
-        opacity: 0 !important;
-        width: 0 !important;
-        height: 0 !important;
-        margin: 0 !important;
-        pointer-events: none !important;
-    }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label span,
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label p,
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label [data-testid="stMarkdownContainer"] p {
-        color: #57534e !important;
-        background: transparent !important;
-    }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked) span,
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked) p,
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked) [data-testid="stMarkdownContainer"] p {
         color: var(--accent-dark) !important;
+        opacity: 1 !important;
+    }
+    .nav-tabs [data-testid="stButton"] button p {
+        font-size: 0.9rem !important;
+        color: inherit !important;
+    }
+    /* Barre de probabilité (résultat prédiction) */
+    .risk-bar {
+        width: 100%;
+        height: 1.15rem;
+        background: #ffffff;
+        border: 2px solid var(--accent-dark);
+        border-radius: 999px;
+        overflow: hidden;
+        margin: 0.35rem 0 0.15rem 0;
+        box-shadow: inset 0 1px 2px rgba(190, 18, 60, 0.06);
+    }
+    .risk-bar-fill {
+        height: 100%;
+        min-width: 0;
+        background: linear-gradient(90deg, var(--accent-dark) 0%, var(--accent) 100%);
+        border-radius: 999px;
+        transition: width 0.35s ease;
+    }
+    .data-table-panel {
+        background: #ffffff;
+        border: 1px solid rgba(244, 63, 94, 0.25);
+        border-radius: 12px;
+        padding: 0.35rem;
+        margin-top: 0.5rem;
+        overflow-x: auto;
+    }
+    .data-table-panel [data-testid="stTable"],
+    .data-table-panel [data-testid="stTable"] > div {
+        background: #ffffff !important;
+    }
+    [data-testid="stTable"] table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff !important;
+        color: #1c1917 !important;
+    }
+    [data-testid="stTable"] thead th {
+        background-color: #fff1f2 !important;
+        color: #1c1917 !important;
+        font-weight: 600;
+        border-bottom: 1px solid rgba(190, 18, 60, 0.22);
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+    }
+    [data-testid="stTable"] tbody td {
+        background-color: #ffffff !important;
+        color: #44403c !important;
+        border-bottom: 1px solid rgba(190, 18, 60, 0.1);
+        padding: 0.45rem 0.75rem;
+    }
+    [data-testid="stTable"] tbody tr:hover td {
+        background-color: #fff8f8 !important;
     }
     /* Cartes cliquables de l'accueil */
     .feature-cards [data-testid="stButton"] button {
@@ -531,11 +543,31 @@ st.markdown(
         background-color: #fff1f2 !important;
         border-color: #e11d48 !important;
     }
-    /* Tableaux (métriques MLflow) */
+    /* Tableaux (historique, métriques MLflow) — thème clair Glide Data Grid */
     [data-testid="stDataFrame"],
     [data-testid="stDataFrame"] > div,
     [data-testid="stDataFrame"] [data-testid="glideDataEditor"],
-    div[data-testid="glideDataEditor"] {
+    div[data-testid="glideDataEditor"],
+    .data-table-panel [data-testid="stDataFrame"] {
+        --gdg-bg-cell: #ffffff;
+        --gdg-bg-cell-medium: #fff8f8;
+        --gdg-bg-header: #fff1f2;
+        --gdg-bg-header-has-focus: #fff1f2;
+        --gdg-bg-header-hovered: #fff8f8;
+        --gdg-text-dark: #1c1917;
+        --gdg-text-medium: #44403c;
+        --gdg-text-light: #78716c;
+        --gdg-text-header: #1c1917;
+        --gdg-text-group-header: #57534e;
+        --gdg-text-bubble: #1c1917;
+        --gdg-bg-icon-header: #fff1f2;
+        --gdg-fg-icon-header: #be123c;
+        --gdg-border-color: rgba(190, 18, 60, 0.22);
+        --gdg-horizontal-border-color: rgba(190, 18, 60, 0.14);
+        --gdg-accent-color: #be123c;
+        --gdg-accent-fg: #ffffff;
+        --gdg-accent-light: rgba(190, 18, 60, 0.12);
+        --gdg-bg-search-cell: #ffffff;
         background-color: #ffffff !important;
         color: #1c1917 !important;
     }
@@ -670,6 +702,30 @@ FEATURE_CARDS: list[tuple[str, str, str, str]] = [
         "Performances des modèles entraînés : ROC-AUC, F1, précision et rappel.",
     ),
 ]
+
+
+def render_top_nav() -> str:
+    """Barre d'onglets en haut de page."""
+    if "nav_page" not in st.session_state:
+        st.session_state.nav_page = PAGE_KEYS[0]
+
+    st.markdown('<div class="nav-tabs">', unsafe_allow_html=True)
+    cols = st.columns(len(PAGE_KEYS))
+    for col, page_key in zip(cols, PAGE_KEYS, strict=True):
+        with col:
+            label = f"{PAGE_ICONS[page_key]} {PAGE_LABELS[page_key]}"
+            is_active = st.session_state.nav_page == page_key
+            if st.button(
+                label,
+                key=f"nav_tab_{page_key}",
+                use_container_width=True,
+                type="primary" if is_active else "secondary",
+                disabled=is_active,
+            ):
+                st.session_state.nav_page = page_key
+                st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+    return st.session_state.nav_page
 
 
 def render_feature_cards() -> None:
@@ -846,6 +902,24 @@ def call_predict(api_url: str, payload: dict[str, float | str]) -> dict | None:
         return None
 
 
+def render_light_table(df: pd.DataFrame) -> None:
+    """Tableau HTML lisible (thème clair), plus fiable que st.dataframe/Glide."""
+    st.markdown('<div class="data-table-panel">', unsafe_allow_html=True)
+    st.table(df.reset_index(drop=True))
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def render_risk_bar(risk_pct: float) -> None:
+    """Barre de probabilité aux couleurs CardioPredict."""
+    pct = min(max(risk_pct, 0.0), 100.0)
+    st.markdown(
+        f'<div class="risk-bar" role="progressbar" aria-valuenow="{pct:.1f}" '
+        f'aria-valuemin="0" aria-valuemax="100">'
+        f'<div class="risk-bar-fill" style="width:{pct:.1f}%;"></div></div>',
+        unsafe_allow_html=True,
+    )
+
+
 def display_result(result: dict, mode: str) -> None:
     proba = result["probability"]
     prediction = result["prediction"]
@@ -870,7 +944,7 @@ def display_result(result: dict, mode: str) -> None:
         with col3:
             st.metric("Prédiction", "Positive" if prediction == 1 else "Négative")
 
-        st.progress(min(risk_pct / 100, 1.0))
+        render_risk_bar(risk_pct)
         st.caption(f"Mode {mode_label}")
 
         if mode == "rapide":
@@ -980,19 +1054,7 @@ with st.expander("⚙️ Configuration technique", expanded=False):
     with link3:
         st.link_button("🔄 Airflow UI", airflow_ui_url())
 
-if "nav_page" not in st.session_state:
-    st.session_state.nav_page = PAGE_KEYS[0]
-
-st.radio(
-    "Navigation",
-    options=PAGE_KEYS,
-    format_func=lambda k: f"{PAGE_ICONS[k]} {PAGE_LABELS[k]}",
-    horizontal=True,
-    label_visibility="collapsed",
-    key="nav_page",
-)
-
-page = st.session_state.nav_page
+page = render_top_nav()
 
 if page == "accueil":
     page_header(
@@ -1192,6 +1254,10 @@ elif page == "metrics":
     )
 
     st.link_button("📊 Ouvrir MLflow", mlflow_ui)
+    if st.button("🔄 Rafraîchir les métriques", type="secondary"):
+        load_mlflow_runs.clear()
+        load_evaluation_metrics.clear()
+        st.rerun()
 
     try:
         models_df = load_mlflow_runs(mlflow_uri, MLFLOW_EXPERIMENT)
@@ -1219,7 +1285,7 @@ elif page == "metrics":
                     display_df[col] = display_df[col].apply(
                         lambda x: f"{x:.3f}" if pd.notna(x) else "—"
                     )
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            render_light_table(display_df)
 
             chart_df = models_df.set_index("Modèle")[["ROC-AUC (test)", "F1", "Précision", "Rappel"]].dropna(how="all")
             if not chart_df.empty:
@@ -1285,7 +1351,7 @@ elif page == "history":
         response.raise_for_status()
         rows = response.json()
         if rows:
-            st.dataframe(pd.DataFrame(rows), use_container_width=True)
+            render_light_table(pd.DataFrame(rows))
         else:
             st.info("Aucune prédiction enregistrée pour le moment.")
     except httpx.HTTPError:

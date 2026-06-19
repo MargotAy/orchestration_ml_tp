@@ -69,7 +69,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - models_data:/app/models:ro
+      - ./models:/app/models:ro
     healthcheck:
       test:
         [
