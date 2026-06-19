@@ -239,14 +239,28 @@ st.markdown(
         border-color: var(--accent-dark) !important;
     }
     /* Masquer le radio Streamlit natif — une seule pastille (::before) */
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label > * {
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [data-baseweb="radio"],
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [data-baseweb="radio"] * {
         display: none !important;
-    }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label [data-testid="stMarkdownContainer"] {
-        display: block !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        overflow: hidden !important;
+        position: absolute !important;
+        clip: rect(0, 0, 0, 0) !important;
     }
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) input[type="radio"] {
-        display: none !important;
+        position: absolute !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        pointer-events: none !important;
     }
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label span,
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label p,

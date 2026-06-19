@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import logging
 import os
+from collections import deque
 from contextlib import asynccontextmanager
-from typing import Literal
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 import joblib
 import pandas as pd
@@ -21,7 +23,9 @@ from src.config import MODEL_DIR
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
+MAX_PREDICTIONS_LOG = 500
 ml: dict[str, object] = {}
+prediction_log: deque[dict[str, Any]] = deque(maxlen=MAX_PREDICTIONS_LOG)
 
 
 class Features(BaseModel):
@@ -108,7 +112,21 @@ def predict(features: Features) -> PredictionOut:
         raise HTTPException(status_code=503, detail="Modele non charge")
     row = pd.DataFrame([features.model_dump()])
     proba = float(model.predict_proba(row)[0, 1])  # type: ignore[attr-defined]
-    return PredictionOut(prediction=int(proba >= 0.5), probability=round(proba, 4))
+    result = PredictionOut(prediction=int(proba >= 0.5), probability=round(proba, 4))
+    prediction_log.appendleft(
+        {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "prediction": result.prediction,
+            "probability": result.probability,
+            **features.model_dump(),
+        }
+    )
+    return result
+
+
+@app.get("/predictions")
+def list_predictions() -> list[dict[str, Any]]:
+    return list(prediction_log)
 
 
 @app.get("/model-info")

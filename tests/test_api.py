@@ -55,3 +55,25 @@ def test_model_info_endpoint() -> None:
         response = client.get("/model-info")
     assert response.status_code == 200
     assert "version" in response.json()
+
+
+def test_predictions_endpoint_logs_predict_calls() -> None:
+    from src.api import prediction_log
+
+    prediction_log.clear()
+    with TestClient(app) as client:
+        empty = client.get("/predictions")
+        assert empty.status_code == 200
+        assert empty.json() == []
+
+        predict = client.post("/predict", json=VALID_PAYLOAD)
+        assert predict.status_code == 200
+
+        history = client.get("/predictions")
+        assert history.status_code == 200
+        rows = history.json()
+        assert len(rows) == 1
+        assert rows[0]["prediction"] == predict.json()["prediction"]
+        assert rows[0]["probability"] == predict.json()["probability"]
+        assert rows[0]["BMI"] == VALID_PAYLOAD["BMI"]
+        assert "timestamp" in rows[0]
