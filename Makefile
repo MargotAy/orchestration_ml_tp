@@ -1,29 +1,28 @@
 # ==============================================================================
 # Projet de classification - Makefile
 # ==============================================================================
-# Seuls les targets d'INSTALLATION sont fournis. Les autres sont a completer
-# au fil des TP (un `# TODO (Sx)` indique la commande attendue).
 # Environnement gere par uv (Python 3.13) a partir de pyproject.toml.
 # Aide : make help
 # ==============================================================================
 
-SHELL        := /bin/sh
-COMPOSE_ALL  := $(COMPOSE) -f docker-compose.yml -f docker-compose.airflow.yml
-PYTHON       := uv run python
-RUN          := uv run
-VENV_DIR     := .venv
-PYTHONPATH   ?= .
+SHELL         := /bin/sh
+COMPOSE       := docker compose
+PYTHON        := uv run python
+RUN           := uv run
+VENV_DIR      := .venv
+PYTHONPATH    ?= .
 export PYTHONPATH
-API_HOST     ?= 127.0.0.1
-API_PORT     ?= 8000
+API_HOST      ?= 127.0.0.1
+API_PORT      ?= 8000
 FRONTEND_PORT ?= 8501
-MLFLOW_PORT  := 5000
-C            ?= 1.0
-MAX_ITER     ?= 1000
-CV           ?= 5
-SCORING      ?= roc_auc
-N_TRIALS     ?= 30
-SRC_DIRS     := src scripts tests
+MLFLOW_PORT   ?= 5000
+API_URL       ?= http://$(API_HOST):$(API_PORT)
+C             ?= 1.0
+MAX_ITER      ?= 1000
+CV            ?= 5
+SCORING       ?= roc_auc
+N_TRIALS      ?= 30
+SRC_DIRS      := src scripts tests
 
 # Couleurs ANSI
 YELLOW := $(shell printf '\033[33m')
@@ -37,8 +36,8 @@ RESET  := $(shell printf '\033[0m')
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
         data train train-models train-optuna evaluate mlflow api predict-client frontend \
-        docker-train-models docker-evaluate \
-        docker-build docker-run docker-up docker-down \
+        docker-build docker-run docker-train-models docker-evaluate \
+        docker-up docker-down docker-frontend docker-airflow docker-all \
         lint format type test check
 
 
@@ -47,11 +46,11 @@ RESET  := $(shell printf '\033[0m')
 # ==============================================================================
 
 help: ## Liste des commandes disponibles
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "$(CYAN)%-16s$(RESET) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "$(CYAN)%-20s$(RESET) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 
 # ==============================================================================
-# Setup - Installation de l'environnement Python (uv + pyproject.toml) [FOURNI]
+# Setup - Installation de l'environnement Python (uv + pyproject.toml)
 # ==============================================================================
 
 check-uv:
@@ -100,7 +99,7 @@ doctor: check-uv check-venv ## Diagnostique l'environnement de travail
 
 
 # ==============================================================================
-# Pipeline ML
+# Pipeline ML (local)
 # ==============================================================================
 
 data: check-venv ## Prepare/genere le jeu de donnees dans data/
@@ -125,33 +124,43 @@ api: check-venv ## Lance l'API FastAPI en rechargement auto (voir API_HOST/API_P
 	$(RUN) uvicorn src.api:app --reload --host $(API_HOST) --port $(API_PORT)
 
 predict-client: check-venv ## Teste l'API (/health, /predict, /model-info)
-	$(PYTHON) scripts/predict_client.py --url http://$(API_HOST):$(API_PORT)
+	$(PYTHON) scripts/predict_client.py --url $(API_URL)
 
-frontend: ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
-	# TODO (S14bis) : $(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)
+frontend: check-venv ## Lance le frontend Streamlit (voir FRONTEND_PORT, API_URL)
+	API_URL=$(API_URL) MLFLOW_TRACKING_URI=http://$(API_HOST):$(MLFLOW_PORT) \
+		$(RUN) streamlit run frontend/app.py --server.port $(FRONTEND_PORT)
 
 
 # ==============================================================================
-# Docker  [A COMPLETER]
+# Docker
 # ==============================================================================
 
-docker-build: ## Construit les images train et api
-	docker compose build train api
+docker-build: ## Construit les images train, api et frontend
+	$(COMPOSE) build train api frontend
 
 docker-run: ## Lance l'entrainement baseline one-shot (profil train)
-	docker compose --profile train run --rm train
+	$(COMPOSE) --profile train run --rm train
 
 docker-train-models: ## Entraine RF/XGB/LGBM + log MLflow (profil train, ~15-30 min)
-	docker compose --profile train run --rm train-models
+	$(COMPOSE) --profile train run --rm train-models
 
 docker-evaluate: ## Evalue le modele registry + log MLflow (profil train)
-	docker compose --profile train run --rm evaluate
+	$(COMPOSE) --profile train run --rm evaluate
 
-docker-up: ## Demarre la stack (mlflow, api)
-	docker compose up -d --build mlflow api
+docker-up: ## Demarre mlflow + api
+	$(COMPOSE) up -d --build mlflow api
 
-	docker compose down
-	docker compose down
+docker-down: ## Arrete tous les services Docker du projet
+	$(COMPOSE) --profile train --profile frontend --profile airflow down
+
+docker-frontend: ## Demarre le frontend Streamlit (profil frontend, port $(FRONTEND_PORT))
+	$(COMPOSE) --profile frontend up -d --build frontend
+
+docker-airflow: ## Demarre Airflow standalone (profil airflow, port 8080)
+	$(COMPOSE) --profile airflow up -d airflow
+
+docker-all: ## Demarre toute la stack (mlflow, api, frontend, airflow)
+	$(COMPOSE) --profile frontend --profile airflow up -d --build mlflow api frontend airflow
 
 
 # ==============================================================================

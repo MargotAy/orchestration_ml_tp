@@ -238,16 +238,15 @@ st.markdown(
         background-color: var(--accent-dark) !important;
         border-color: var(--accent-dark) !important;
     }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [data-baseweb="radio"] {
+    /* Masquer le radio Streamlit natif — une seule pastille (::before) */
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label > * {
         display: none !important;
     }
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label [data-testid="stMarkdownContainer"] {
+        display: block !important;
+    }
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) input[type="radio"] {
-        position: absolute !important;
-        opacity: 0 !important;
-        width: 0 !important;
-        height: 0 !important;
-        margin: 0 !important;
-        pointer-events: none !important;
+        display: none !important;
     }
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label span,
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label p,
