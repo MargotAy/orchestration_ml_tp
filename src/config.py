@@ -54,5 +54,8 @@ MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:50
 MLFLOW_EXPERIMENT = "heart-disease-classification"
 MODEL_NAME = "heart-disease-model"
 
+# URL de l'API d'inference (Airflow predictions_dag, scripts clients).
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
+
 EVAL_ROC_AUC_MIN = 0.8
 EVAL_F1_MIN = 0.8

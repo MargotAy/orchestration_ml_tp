@@ -1,11 +1,9 @@
-# Seance 14 - TP docker-compose : orchestrez votre stack de classification.
-# Squelette a completer (marqueurs TODO S14-n). Voir tp/TP_S14_docker_compose.md.
+# Seance 14 + 17 - Stack classification + Airflow.
 #
-# Commandes :
-#   docker compose up -d mlflow
-#   docker compose --profile train run --rm train
-#   docker compose up -d api
-#   -> API : http://localhost:8000  |  MLflow : http://localhost:5000
+#   docker compose up -d mlflow api
+#   docker compose --profile airflow up -d          # UI http://localhost:8080
+#   docker compose --profile frontend up -d frontend
+#   VPS : ouvrir le port 8080 (Security List + iptables) pour Airflow
 
 services:
   mlflow:
@@ -100,6 +98,33 @@ services:
       - "8501:8501"
     profiles:
       - frontend
+
+  airflow:
+    image: apache/airflow:2.10.5
+    command: airflow standalone
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      API_URL: http://api:8000
+      PYTHONPATH: /opt/airflow
+      _PIP_ADDITIONAL_REQUIREMENTS: scikit-learn pandas numpy joblib httpx python-dotenv
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+    depends_on:
+      - mlflow
+      - api
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./data:/opt/airflow/data
+      - ./src:/opt/airflow/src
+      - ./prepare_data.py:/opt/airflow/prepare_data.py
+      - models_data:/opt/airflow/models
+    restart: unless-stopped
+    profiles:
+      - airflow
 
 volumes:
   mlflow_data:

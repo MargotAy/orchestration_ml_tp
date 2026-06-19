@@ -60,6 +60,13 @@ def public_api_docs_url() -> str:
     return f"http://{public_host()}:8000/docs"
 
 
+def airflow_ui_url() -> str:
+    """URL web Airflow (orchestration des pipelines)."""
+    if url := os.environ.get("AIRFLOW_UI_URL"):
+        return url.rstrip("/")
+    return f"http://{public_host()}:8080"
+
+
 def is_docker_stack() -> bool:
     return os.environ.get("API_URL", "").rstrip("/") == "http://api:8000"
 
@@ -190,18 +197,57 @@ st.markdown(
     }
     .context-box a { color: var(--accent-dark); text-decoration: none; font-weight: 500; }
     .context-box a:hover { text-decoration: underline; }
-    /* Onglets navigation */
+    /* Onglets navigation — pastille radio custom */
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) > div[role="radiogroup"] {
+        gap: 0.35rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.65rem;
+        margin-bottom: 1.25rem;
+        background: transparent !important;
+    }
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
         background: transparent !important;
         padding: 0.55rem 1rem !important;
         border-radius: 8px !important;
         border: 1px solid transparent !important;
         color: #57534e !important;
         font-weight: 500;
+        cursor: pointer !important;
+    }
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [role="radiogroup"] > label::before {
+        content: "" !important;
+        display: inline-block !important;
+        width: 15px !important;
+        height: 15px !important;
+        min-width: 15px !important;
+        min-height: 15px !important;
+        border: 2px solid var(--accent-dark) !important;
+        border-radius: 50% !important;
+        background-color: #ffffff !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
     }
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked) {
         background: var(--accent-soft) !important;
         border-color: rgba(244, 63, 94, 0.22) !important;
+    }
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked)::before {
+        background-color: var(--accent-dark) !important;
+        border-color: var(--accent-dark) !important;
+    }
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) [data-baseweb="radio"] {
+        display: none !important;
+    }
+    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) input[type="radio"] {
+        position: absolute !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        pointer-events: none !important;
     }
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label span,
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label p,
@@ -213,57 +259,6 @@ st.markdown(
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked) p,
     div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) label:has(input:checked) [data-testid="stMarkdownContainer"] p {
         color: var(--accent-dark) !important;
-    }
-    /* Cercles radio : anneau rouge vide (off) / disque rouge plein (on) */
-    div[data-testid="stRadio"] [data-baseweb="radio"] {
-        background: transparent !important;
-        align-items: center !important;
-    }
-    div[data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
-        width: 14px !important;
-        height: 14px !important;
-        min-width: 14px !important;
-        min-height: 14px !important;
-        border-radius: 50% !important;
-        border: 2px solid var(--accent-dark) !important;
-        background-color: #ffffff !important;
-        box-sizing: border-box !important;
-        flex-shrink: 0 !important;
-    }
-    div[data-testid="stRadio"] label:not(:has(input:checked)) [data-baseweb="radio"] > div:nth-child(2) {
-        width: 0 !important;
-        height: 0 !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        opacity: 0 !important;
-        border: none !important;
-        background: transparent !important;
-    }
-    div[data-testid="stRadio"] label:has(input:checked) [data-baseweb="radio"] > div:first-child {
-        background-color: var(--accent-dark) !important;
-        border-color: var(--accent-dark) !important;
-    }
-    div[data-testid="stRadio"] label:has(input:checked) [data-baseweb="radio"] > div:nth-child(2) {
-        display: none !important;
-    }
-    /* Secours si le markup radio diffère selon la version Streamlit */
-    div[data-testid="stRadio"] input[type="radio"] {
-        appearance: none !important;
-        -webkit-appearance: none !important;
-        width: 14px !important;
-        height: 14px !important;
-        min-width: 14px !important;
-        min-height: 14px !important;
-        margin: 0 0.45rem 0 0 !important;
-        border: 2px solid var(--accent-dark) !important;
-        border-radius: 50% !important;
-        background-color: #ffffff !important;
-        cursor: pointer !important;
-        flex-shrink: 0 !important;
-    }
-    div[data-testid="stRadio"] input[type="radio"]:checked {
-        background-color: var(--accent-dark) !important;
-        border-color: var(--accent-dark) !important;
     }
     /* Cartes cliquables de l'accueil */
     .feature-cards [data-testid="stButton"] button {
@@ -495,13 +490,6 @@ st.markdown(
     section.main {
         background: transparent !important;
         color: #1c1917 !important;
-    }
-    div[data-testid="stRadio"]:has([role="radiogroup"] > label:nth-child(5)) > div[role="radiogroup"] {
-        gap: 0.35rem;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 0.65rem;
-        margin-bottom: 1.25rem;
-        background: transparent !important;
     }
     /* Boutons secondaires (cartes accueil, etc.) */
     [data-testid="stBaseButton-secondary"] button,
@@ -971,11 +959,13 @@ mlflow_uri = mlflow_tracking_uri()
 mlflow_ui = mlflow_ui_url()
 
 with st.expander("⚙️ Configuration technique", expanded=False):
-    link1, link2 = st.columns(2)
+    link1, link2, link3 = st.columns(3)
     with link1:
         st.link_button("📄 API — documentation", public_api_docs_url())
     with link2:
         st.link_button("📊 MLflow UI", mlflow_ui)
+    with link3:
+        st.link_button("🔄 Airflow UI", airflow_ui_url())
 
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = PAGE_KEYS[0]

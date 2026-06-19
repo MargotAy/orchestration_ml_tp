@@ -8,6 +8,7 @@
 # ==============================================================================
 
 SHELL        := /bin/sh
+COMPOSE_ALL  := $(COMPOSE) -f docker-compose.yml -f docker-compose.airflow.yml
 PYTHON       := uv run python
 RUN          := uv run
 VENV_DIR     := .venv
@@ -36,6 +37,7 @@ RESET  := $(shell printf '\033[0m')
 .PHONY: help \
         check-uv check-venv venv-create install sync deps-sync lock reset-env doctor \
         data train train-models train-optuna evaluate mlflow api predict-client frontend \
+        docker-train-models docker-evaluate \
         docker-build docker-run docker-up docker-down \
         lint format type test check
 
@@ -148,7 +150,7 @@ docker-evaluate: ## Evalue le modele registry + log MLflow (profil train)
 docker-up: ## Demarre la stack (mlflow, api)
 	docker compose up -d --build mlflow api
 
-docker-down: ## Arrete les conteneurs (conserve les volumes)
+	docker compose down
 	docker compose down
 
 

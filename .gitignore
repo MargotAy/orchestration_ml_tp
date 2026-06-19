@@ -3,6 +3,8 @@ mlflow.db
 uv.lock
 mlartifacts/
 mlruns/
+logs/
+plugins/
 .python-version
 src/__pycache__/
 tests/__pycache__/

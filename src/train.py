@@ -22,7 +22,7 @@ def build_model() -> Pipeline:
     )
 
 
-def train() -> None:
+def train() -> dict[str, float]:
     # Chargement et split
     df = load_data()
     x_train, x_test, y_train, y_test = split(df)
@@ -44,6 +44,8 @@ def train() -> None:
     Path("models").mkdir(exist_ok=True)
     joblib.dump(model, "models/model.joblib")
     print("Modèle sauvegardé dans models/model.joblib")
+
+    return {"f1": float(f1), "roc_auc": float(roc_auc)}
 
 
 if __name__ == "__main__":
